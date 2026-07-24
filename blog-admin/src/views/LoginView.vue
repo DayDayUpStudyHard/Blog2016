@@ -4,7 +4,7 @@
       <div class="card-inner">
         <div class="logo">
           <span class="logo-icon">B</span>
-          <span class="logo-text">Blog2026</span>
+          <span class="logo-text">AtlasMind</span>
         </div>
         <p class="subtitle">管理后台</p>
 

@@ -8,8 +8,8 @@
         </n-avatar>
 
         <div class="identity-copy">
-          <span class="eyebrow">Blog2026 / Knowledge Base</span>
-          <h1>{{ siteInfo.nickname || 'Blog2026' }}</h1>
+          <span class="eyebrow">AtlasMind / Knowledge Base</span>
+          <h1>{{ siteInfo.nickname || 'AtlasMind' }}</h1>
           <p>{{ siteInfo.bio || '记录工程实践、系统设计与生活里的长期思考。' }}</p>
           <div class="hero-social" v-if="socialLinks.length > 0">
             <a v-for="(link, i) in socialLinks" :key="i" :href="link.url" :title="link.name" target="_blank" class="social-link">

@@ -4,6 +4,32 @@
 
 ---
 
+## 统一 AtlasMind 品牌显示与动态站点名称
+
+**日期**：2026-07-24
+
+### 调整
+
+- 用户端品牌统一为 `AtlasMind`，AI 助手统一为 `AtlasMind AI`。
+- 浏览器标题改为 `AtlasMind · 知识工作台`。
+- 页脚版权改为 `© 2024 AtlasMind`。
+- 管理端登录页、侧栏和浏览器标题同步更新。
+- 动态站点名称使用 `t_user.id=1.nickname`，初始化 SQL 和 Java 默认数据同步改为 `AtlasMind`。
+- 仓库目录、API 路径、数据库名 `blog2026` 和历史文章内容保持不变。
+
+### 修改文件
+
+| 文件 | 改动 |
+|------|------|
+| `blog-front/index.html`、`blog-front/src/components/AppHeader.vue` | 用户端浏览器标题和品牌 Logo |
+| `blog-front/src/components/AppFooter.vue` | 页脚版权名称 |
+| `blog-front/src/views/HomeAiView.vue`、`blog-front/src/views/HomeView.vue` | 首页品牌和 AI 助手名称 |
+| `blog-admin/index.html`、`blog-admin/src/views/LoginView.vue`、`blog-admin/src/components/AdminLayout.vue` | 管理端品牌显示 |
+| `blog-server/src/main/java/com/blog/config/DataInitializer.java` | 新环境默认动态站点名称 |
+| `blog-server/sql/blog2026.sql` | SQL 初始化数据中的站点昵称 |
+
+---
+
 ## 收紧 AI 首页首屏并将“归档”更名为“时间线”
 
 **日期**：2026-07-24

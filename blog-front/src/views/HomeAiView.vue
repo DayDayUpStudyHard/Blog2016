@@ -2,14 +2,14 @@
   <div class="home-ai-page">
     <section class="ai-stage" :class="{ 'is-chatting': messages.length > 0 }">
       <div v-if="messages.length === 0" class="ai-welcome">
-        <span class="eyebrow">Blog2026 AI</span>
+        <span class="eyebrow">AtlasMind AI</span>
         <h1>先问，再读。</h1>
         <p>从你的文章、学习笔记和项目复盘里找到答案。</p>
       </div>
 
       <div v-else ref="messageList" class="conversation">
         <div v-for="(message, index) in messages" :key="index" class="message" :class="message.role">
-          <span class="message-label">{{ message.role === 'user' ? '你' : 'Blog2026 AI' }}</span>
+          <span class="message-label">{{ message.role === 'user' ? '你' : 'AtlasMind AI' }}</span>
           <div class="message-content" v-html="renderMarkdown(message.content)"></div>
           <div v-if="message.sources?.length" class="source-list">
             <span class="source-heading">参考来源</span>
@@ -25,7 +25,7 @@
           </div>
         </div>
         <div v-if="streaming" class="message assistant">
-          <span class="message-label">Blog2026 AI</span>
+          <span class="message-label">AtlasMind AI</span>
           <span class="streaming-status">{{ streamingStatus || '正在整理答案' }}</span>
         </div>
       </div>

@@ -7,7 +7,7 @@
             <router-link to="/" class="logo-link">
               <span class="logo-icon">B</span>
               <span class="logo-copy">
-                <span class="logo-text">Blog2026</span>
+                <span class="logo-text">AtlasMind</span>
                 <span class="logo-subtitle">Content Studio</span>
               </span>
             </router-link>

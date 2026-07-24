@@ -3,7 +3,7 @@
     <div class="footer-inner">
       <div class="footer-divider"></div>
       <div class="footer-bottom">
-        <span>&copy; 2024 Blog2026</span>
+        <span>&copy; 2024 AtlasMind</span>
         <span class="separator">·</span>
         <span>Powered by Spring Boot & Vue</span>
       </div>

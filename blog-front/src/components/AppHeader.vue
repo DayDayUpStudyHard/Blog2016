@@ -3,7 +3,7 @@
     <div class="header-inner">
       <router-link to="/" class="logo">
         <span class="logo-icon">B</span>
-        <span class="logo-text">Blog2026</span>
+        <span class="logo-text">AtlasMind</span>
       </router-link>
       <nav class="nav">
         <router-link to="/" class="nav-link">

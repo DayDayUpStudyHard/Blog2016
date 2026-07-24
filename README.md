@@ -1,6 +1,46 @@
-# Blog2026 前后端分离博客系统
+# AtlasMind 知识工作台
 
-Spring Boot 3.2.5 + Vue 3 + MyBatis-Plus + Sa-Token
+## 前后端分离的个人知识库与 Agent 系统
+
+AtlasMind 是一个基于 Spring Boot、Vue 3 和 Python FastAPI 构建的前后端分离知识库与 Agent 系统，面向个人学习、项目复盘与 Agent 面试准备。
+
+> 原项目名：Blog2026。博客是内容载体，知识库是核心资产，Agent 是主要交互方式，前后端分离和多服务协作是工程基础。
+
+AtlasMind 将文章、Markdown/TXT/PDF 文档、项目记录和学习笔记统一沉淀到个人知识库中，通过 RAG 检索和流式 AI 对话帮助用户完成：
+
+- **知识沉淀**：导入文档、管理文章、混合切片并保留 MySQL 事实源
+- **知识检索**：向量检索为主，关键词检索 fallback，统一召回文章和知识库文档
+- **Agent 交互**：基于检索结果回答问题，展示引用来源，支持连续追问
+- **个人成长**：用于学习复盘、项目分析、技术栈梳理和 Agent 面试准备
+
+## 项目定位
+
+| 层级 | 作用 |
+|------|------|
+| 前端层 | Vue 3 用户端博客、Vue 3 管理端 CMS，分别服务阅读问答和知识库运营 |
+| 后端层 | Spring Boot REST API，负责内容管理、权限认证、搜索、知识库和业务编排 |
+| AI 服务层 | Python FastAPI，负责文档解析、切片、Embedding、RAG 检索和流式问答 |
+| 内容层 | 博客文章、说说、Markdown/TXT/PDF 文档和项目复盘 |
+| 知识层 | MySQL 文档事实源、混合切片、Embedding 向量、ES 检索索引 |
+| Agent 层 | 检索增强问答、来源引用、流式输出和连续对话 |
+| 应用层 | 用户端 AI 首页、管理端知识空间、QA 检索测试和内容运营 |
+
+## 架构概览
+
+```text
+Vue 3 用户端          Vue 3 管理端
+      │                     │
+      └────── Spring Boot REST API ──────┐
+                                         │
+                           Python FastAPI AI 服务
+                           ├─ 文档解析与混合切片
+                           ├─ Embedding 与 RAG 检索
+                           └─ Agent 流式问答
+                                         │
+                         MySQL + Elasticsearch + Redis
+```
+
+前后端通过 REST API 解耦，AI 能力作为独立 Python 微服务接入；Java 服务负责业务权限和任务编排，Python 服务负责知识库处理和 Agent 推理。
 
 ## 技术栈
 
@@ -14,6 +54,10 @@ Spring Boot 3.2.5 + Vue 3 + MyBatis-Plus + Sa-Token
 | API文档 | Knife4j 4.5.0 |
 | 管理后台 | Vue 3 + Element Plus + md-editor-v3 |
 | 博客前台 | Vue 3 + Naive UI + marked |
+| AI 微服务 | Python FastAPI + SSE 流式输出 |
+| Embedding | SiliconFlow + Qwen/Qwen3-Embedding-4B |
+| RAG 检索 | Elasticsearch 向量检索 + 关键词 fallback |
+| 大模型问答 | DeepSeek LLM + 检索增强提示 |
 
 ## 项目结构
 
