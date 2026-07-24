@@ -16,7 +16,7 @@
           <span class="nav-label">分类</span>
         </router-link>
         <router-link to="/archive" class="nav-link">
-          <span class="nav-label">归档</span>
+          <span class="nav-label">时间线</span>
         </router-link>
         <router-link to="/guestbook" class="nav-link">
           <span class="nav-label">留言板</span>

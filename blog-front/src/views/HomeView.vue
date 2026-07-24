@@ -53,7 +53,7 @@
             <span class="section-kicker">Articles</span>
             <h2>{{ keyword ? '搜索结果' : '最新文章' }}</h2>
           </div>
-          <router-link to="/archive" class="archive-link">查看归档</router-link>
+          <router-link to="/archive" class="archive-link">查看时间线</router-link>
         </div>
 
         <n-spin :show="loading">

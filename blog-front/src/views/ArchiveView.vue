@@ -1,7 +1,7 @@
 <template>
   <div class="archive-page">
     <div class="page-head">
-      <h2 class="page-title">文章归档</h2>
+      <h2 class="page-title">文章时间线</h2>
       <p class="page-desc">{{ totalCount }} 篇文章</p>
     </div>
 

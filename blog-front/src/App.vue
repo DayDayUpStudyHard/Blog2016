@@ -14,7 +14,7 @@
           </main>
           <AppFooter />
           <ToolsWidget />
-          <ChatWindow />
+          <ChatWindow v-if="route.path !== '/'" />
         </div>
         <button class="theme-toggle" @click="toggleTheme" :title="themeLabel">
           <svg v-if="currentTheme === 'light'" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -32,8 +32,10 @@ import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
 import ToolsWidget from './components/ToolsWidget.vue'
 import ChatWindow from './components/ChatWindow.vue'
+import { useRoute } from 'vue-router'
 
 const currentTheme = ref(localStorage.getItem('blog-theme') || 'light')
+const route = useRoute()
 const themeLabel = computed(() => currentTheme.value === 'light' ? '切换暗色模式' : '切换亮色模式')
 
 onMounted(() => {

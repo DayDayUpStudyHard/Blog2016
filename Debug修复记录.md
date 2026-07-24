@@ -4,6 +4,53 @@
 
 ---
 
+## 收紧 AI 首页首屏并将“归档”更名为“时间线”
+
+**日期**：2026-07-24
+
+### 调整
+
+- 将首页 AI 区域高度、输入框宽度和上下留白略微收紧，让文章和说说更早进入首屏。
+- 移动端同步降低 AI 区域高度，保留输入框和推荐问题的可用性。
+- 用户端导航、首页入口和时间轴页面标题统一使用“时间线”。
+- `/archive` 路由保持不变，仅调整展示文案。
+
+### 修改文件
+
+| 文件 | 改动 |
+|------|------|
+| `blog-front/src/views/HomeAiView.vue` | 收紧 AI 首屏布局，入口文案改为“时间线” |
+| `blog-front/src/components/AppHeader.vue` | 导航“归档”改为“时间线” |
+| `blog-front/src/views/ArchiveView.vue` | 页面标题改为“文章时间线” |
+| `blog-front/src/views/HomeView.vue` | 同步旧首页入口文案 |
+
+---
+
+## 用户端首页改为 AI 问答优先的博客内容流布局
+
+**日期**：2026-07-24
+
+### 现象
+
+原用户端首页以个人介绍和文章卡片为主，AI 问答仅通过右下角浮窗进入，不符合“先问 AI、再阅读博客”的知识库使用路径。
+
+### 修复
+
+| 文件 | 改动 |
+|------|------|
+| `blog-front/src/views/HomeAiView.vue` | 新增 AI-first 首页：中央问答输入框、推荐问题、流式对话态、回答来源、下方文章和说说内容流 |
+| `blog-front/src/router/index.js` | 将 `/` 首页路由切换到 `HomeAiView.vue` |
+| `blog-front/src/App.vue` | 首页隐藏旧的右下角 AI 浮窗，其他页面继续保留 |
+
+### 验证
+
+```text
+blog-front: vite build -> success
+本地开发地址: http://localhost:5174/
+```
+
+---
+
 ## RAG 文档上传后消息中心提示 Python 服务 404 / 索引失败
 
 **日期**：2026-07-24
