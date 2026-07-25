@@ -7,10 +7,6 @@
         <p>把学习笔记、项目资料和面试复盘导入 RAG，统一进入博客助手的引用式问答。</p>
       </div>
       <div class="hero-actions">
-        <el-button @click="$router.push('/knowledge/jobs')">
-          <el-icon><Refresh /></el-icon>
-          任务中心
-        </el-button>
         <el-button @click="openSpaceDialog()">
           <el-icon><Plus /></el-icon>
           新建空间

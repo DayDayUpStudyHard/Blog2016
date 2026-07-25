@@ -89,9 +89,6 @@ export function restoreKbDocument(id) { return api.post(`/api/admin/kb/documents
 export function permanentDeleteKbDocument(id) { return api.delete(`/api/admin/kb/documents/${id}/permanent`) }
 export function reparseKbDocument(id) { return api.post(`/api/admin/kb/documents/${id}/reparse`) }
 export function reindexKbDocument(id) { return api.post(`/api/admin/kb/documents/${id}/reindex`) }
-export function getKbJob(id) { return api.get(`/api/admin/kb/jobs/${id}`) }
-export function getKbJobs(params) { return api.get('/api/admin/kb/jobs', { params }) }
-export function retryKbJob(id) { return api.post(`/api/admin/kb/jobs/${id}/retry`) }
 export function testKbQa(data) { return api.post('/api/admin/kb/qa/test', data) }
 
 export function getKbNotifications(params) { return api.get('/api/admin/kb/notifications', { params }) }

@@ -11,7 +11,7 @@
 ### 调整
 
 - 新增 Java `AiGateway` 模块，统一封装 Spring Boot 到 Python AI 服务的导入、重建索引、删除索引和检索测试调用。
-- 新增知识库任务中心，支持任务分页、状态筛选、进度展示、失败原因和失败/等待任务重试。
+- 新增知识库异步导入记录，保存解析、Embedding、索引任务状态，并通过消息中心反馈结果。
 - 新增管理端 Dashboard 聚合接口 `/api/admin/dashboard/overview`，统一返回内容统计、知识库文档数、失败任务数和最近内容。
 - 新增用户端 AI 会话持久化，问题和回答写入 `kb_qa_session`、`kb_qa_message`，刷新页面后可以恢复历史消息。
 - 新增系统运行配置中心，支持动态调整 AI 默认 Top-K、最大 Top-K 和 AI 开关。
@@ -21,17 +21,14 @@
 - Python 内部知识库任务接口增加 `CHAT_ASSISTANT_TOKEN` 校验，Java 网关自动携带 `X-Internal-Token`。
 - 修正 Top-K 配置边界：当最大 Top-K 调小时，默认 Top-K 自动收敛到最大值；同时规范 AI 服务 URL 尾斜杠和最小超时时间。
 - 修正 `ai_session_security.sql` 对 MySQL 8.0.28 的兼容性，改用 `INFORMATION_SCHEMA` 判断字段后再执行幂等变更。
-- 将知识库任务中心加入管理端侧边栏，并补充路由标题；此前只能从知识库页面右上角按钮进入，入口不够明显。
-- 增强知识库任务中心：增加全部/处理中/失败/已完成状态汇总卡片、快捷筛选、处理中自动刷新提示、任务对应文档和空间信息、失败任务高亮及知识库跳转入口。
-- 后端任务列表补充文档标题、文档状态和知识空间名称，并新增任务状态汇总数据，避免任务中心只显示任务 ID 和基础状态。
+- 根据实际使用体验移除独立的知识库任务中心页面、菜单、路由和任务管理接口，避免与知识库页面及消息中心重复。
+- 保留 `kb_ingest_job` 作为内部异步处理记录，继续用于 Python 任务回调、Dashboard 失败统计和消息中心通知。
 
 ### 新增接口
 
 | 接口 | 作用 |
 |------|------|
 | `GET /api/admin/dashboard/overview` | 管理端仪表盘聚合数据 |
-| `GET /api/admin/kb/jobs` | 知识库任务列表 |
-| `POST /api/admin/kb/jobs/{id}/retry` | 重试失败或等待中的任务 |
 | `POST /api/ai/sessions` | 创建用户端 AI 会话 |
 | `GET /api/ai/sessions/{id}/messages` | 查询会话消息 |
 | `POST /api/ai/sessions/{id}/messages` | 保存会话消息 |

@@ -63,7 +63,6 @@ public class KnowledgeBaseAdminController {
         Map<String, Object> data = new HashMap<>();
         data.put("records", pageResult.getRecords());
         data.put("total", pageResult.getTotal());
-        data.put("summary", knowledgeBaseService.getJobStatusCounts());
         return Result.ok(data);
     }
 
@@ -124,30 +123,6 @@ public class KnowledgeBaseAdminController {
     @PostMapping("/documents/{id}/reindex")
     public Result<?> reindexDocument(@PathVariable Long id) {
         knowledgeBaseService.reindexDocument(id);
-        return Result.ok();
-    }
-
-    @GetMapping("/jobs/{id}")
-    public Result<?> job(@PathVariable Long id) {
-        return Result.ok(knowledgeBaseService.getJob(id));
-    }
-
-    @GetMapping("/jobs")
-    public Result<Map<String, Object>> jobs(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String status) {
-        Page<com.blog.entity.KbIngestJob> pageResult = knowledgeBaseService.listJobs(page, size, status);
-        Map<String, Object> data = new HashMap<>();
-        data.put("records", pageResult.getRecords());
-        data.put("total", pageResult.getTotal());
-        return Result.ok(data);
-    }
-
-    @OperationLog(value = "重试知识库任务", type = "UPDATE")
-    @PostMapping("/jobs/{id}/retry")
-    public Result<?> retryJob(@PathVariable Long id) {
-        knowledgeBaseService.retryJob(id);
         return Result.ok();
     }
 

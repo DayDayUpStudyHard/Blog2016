@@ -3,7 +3,6 @@ package com.blog.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.blog.entity.KbDocument;
 import com.blog.entity.KbDocumentChunk;
-import com.blog.entity.KbIngestJob;
 import com.blog.entity.KbNotification;
 import com.blog.entity.KbSpace;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,14 +44,6 @@ public interface KnowledgeBaseService {
     void permanentDeleteDocument(Long id) throws IOException;
 
     Map<String, Object> qaTest(Map<String, Object> request);
-
-    KbIngestJob getJob(Long id);
-
-    Page<KbIngestJob> listJobs(int page, int size, String status);
-
-    Map<String, Long> getJobStatusCounts();
-
-    void retryJob(Long id);
 
     List<KbNotification> listNotifications(boolean unreadOnly);
 

@@ -25,12 +25,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * 知识库管理实现。
@@ -272,66 +269,6 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     }
 
     @Override
-    public KbIngestJob getJob(Long id) {
-        return jobMapper.selectById(id);
-    }
-
-    @Override
-    public Page<KbIngestJob> listJobs(int page, int size, String status) {
-        LambdaQueryWrapper<KbIngestJob> query = new LambdaQueryWrapper<KbIngestJob>()
-                .orderByDesc(KbIngestJob::getCreateTime);
-        if (status != null && !status.isBlank()) {
-            query.eq(KbIngestJob::getStatus, status);
-        }
-        Page<KbIngestJob> result = jobMapper.selectPage(new Page<>(page, size), query);
-        enrichJobs(result.getRecords());
-        return result;
-    }
-
-    @Override
-    public Map<String, Long> getJobStatusCounts() {
-        List<KbIngestJob> jobs = jobMapper.selectList(new LambdaQueryWrapper<KbIngestJob>()
-                .select(KbIngestJob::getStatus));
-        Map<String, Long> counts = jobs.stream()
-                .collect(Collectors.groupingBy(
-                        job -> job.getStatus() == null ? "UNKNOWN" : job.getStatus(),
-                        LinkedHashMap::new,
-                        Collectors.counting()
-                ));
-        Map<String, Long> summary = new LinkedHashMap<>();
-        summary.put("TOTAL", (long) jobs.size());
-        summary.put("PENDING", counts.getOrDefault("PENDING", 0L));
-        summary.put("RUNNING", counts.getOrDefault("RUNNING", 0L));
-        summary.put("SUCCESS", counts.getOrDefault("SUCCESS", 0L));
-        summary.put("FAILED", counts.getOrDefault("FAILED", 0L));
-        summary.put("UNKNOWN", counts.getOrDefault("UNKNOWN", 0L));
-        return summary;
-    }
-
-    @Override
-    @Transactional
-    public void retryJob(Long id) {
-        KbIngestJob previous = jobMapper.selectById(id);
-        if (previous == null) {
-            throw new IllegalArgumentException("任务不存在");
-        }
-        if (!List.of("FAILED", "PENDING").contains(previous.getStatus())) {
-            throw new IllegalArgumentException("只有失败或等待中的任务可以重试");
-        }
-
-        KbDocument document = requireDocument(previous.getDocumentId());
-        if (Integer.valueOf(1).equals(document.getDeleted())) {
-            throw new IllegalArgumentException("已删除文档不能重试");
-        }
-
-        if ("REINDEX".equals(previous.getJobType()) || "RESTORE".equals(previous.getJobType())) {
-            reindexDocument(document.getId());
-        } else {
-            reparseDocument(document.getId());
-        }
-    }
-
-    @Override
     public List<KbNotification> listNotifications(boolean unreadOnly) {
         LambdaQueryWrapper<KbNotification> query = new LambdaQueryWrapper<KbNotification>()
                 .orderByDesc(KbNotification::getCreateTime)
@@ -373,37 +310,6 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         job.setMessage("等待处理");
         jobMapper.insert(job);
         return job;
-    }
-
-    private void enrichJobs(List<KbIngestJob> jobs) {
-        if (jobs == null || jobs.isEmpty()) return;
-        List<Long> documentIds = jobs.stream()
-                .map(KbIngestJob::getDocumentId)
-                .filter(id -> id != null)
-                .distinct()
-                .toList();
-        if (documentIds.isEmpty()) return;
-
-        Map<Long, KbDocument> documents = documentMapper.selectBatchIds(documentIds).stream()
-                .collect(Collectors.toMap(KbDocument::getId, Function.identity()));
-        List<Long> spaceIds = documents.values().stream()
-                .map(KbDocument::getSpaceId)
-                .filter(id -> id != null)
-                .distinct()
-                .toList();
-        Map<Long, KbSpace> spaces = spaceIds.isEmpty()
-                ? Map.of()
-                : spaceMapper.selectBatchIds(spaceIds).stream()
-                .collect(Collectors.toMap(KbSpace::getId, Function.identity()));
-
-        for (KbIngestJob job : jobs) {
-            KbDocument document = documents.get(job.getDocumentId());
-            if (document == null) continue;
-            job.setDocumentTitle(document.getTitle());
-            job.setDocumentStatus(document.getStatus());
-            KbSpace space = spaces.get(document.getSpaceId());
-            if (space != null) job.setSpaceName(space.getName());
-        }
     }
 
     private KbSpace findOrCreateDebugSpace() {

@@ -25,11 +25,4 @@ public class KbIngestJob {
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
-
-    @TableField(exist = false)
-    private String documentTitle;
-    @TableField(exist = false)
-    private String documentStatus;
-    @TableField(exist = false)
-    private String spaceName;
 }
