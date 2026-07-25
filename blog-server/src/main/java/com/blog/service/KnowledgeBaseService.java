@@ -50,6 +50,8 @@ public interface KnowledgeBaseService {
 
     Page<KbIngestJob> listJobs(int page, int size, String status);
 
+    Map<String, Long> getJobStatusCounts();
+
     void retryJob(Long id);
 
     List<KbNotification> listNotifications(boolean unreadOnly);

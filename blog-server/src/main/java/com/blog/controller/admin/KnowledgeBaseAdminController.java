@@ -63,6 +63,7 @@ public class KnowledgeBaseAdminController {
         Map<String, Object> data = new HashMap<>();
         data.put("records", pageResult.getRecords());
         data.put("total", pageResult.getTotal());
+        data.put("summary", knowledgeBaseService.getJobStatusCounts());
         return Result.ok(data);
     }
 
