@@ -70,6 +70,14 @@
                 <span class="menu-label">知识库</span>
               </template>
             </el-menu-item>
+            <el-menu-item index="/knowledge/jobs">
+              <template #title>
+                <span class="menu-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M8 15h3M8 18h6"/></svg>
+                </span>
+                <span class="menu-label">任务中心</span>
+              </template>
+            </el-menu-item>
             <el-menu-item index="/about-page">
               <template #title>
                 <span class="menu-icon">
@@ -190,6 +198,7 @@ const pageTitle = computed(() => {
     '/comments': '留言管理',
     '/moments': '说说管理',
     '/knowledge': '知识库',
+    '/knowledge/jobs': '知识库任务中心',
     '/about-page': '关于页面',
     '/logs': '操作日志',
     '/settings': '个人设置',

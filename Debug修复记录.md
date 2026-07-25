@@ -21,6 +21,7 @@
 - Python 内部知识库任务接口增加 `CHAT_ASSISTANT_TOKEN` 校验，Java 网关自动携带 `X-Internal-Token`。
 - 修正 Top-K 配置边界：当最大 Top-K 调小时，默认 Top-K 自动收敛到最大值；同时规范 AI 服务 URL 尾斜杠和最小超时时间。
 - 修正 `ai_session_security.sql` 对 MySQL 8.0.28 的兼容性，改用 `INFORMATION_SCHEMA` 判断字段后再执行幂等变更。
+- 将知识库任务中心加入管理端侧边栏，并补充路由标题；此前只能从知识库页面右上角按钮进入，入口不够明显。
 
 ### 新增接口
 
