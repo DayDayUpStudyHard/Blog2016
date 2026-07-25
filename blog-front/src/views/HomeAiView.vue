@@ -105,7 +105,14 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { marked } from 'marked'
 import { useRoute, useRouter } from 'vue-router'
-import { getArticles, getMoments } from '../api/index.js'
+import {
+  appendAiMessage,
+  createAiSession,
+  getAiSessionMessages,
+  getArticles,
+  getMoments,
+  getRuntimeConfig
+} from '../api/index.js'
 import ArticleCard from '../components/ArticleCard.vue'
 import BackToTop from '../components/BackToTop.vue'
 
@@ -123,6 +130,9 @@ const messages = ref([])
 const streaming = ref(false)
 const streamingStatus = ref('')
 const messageList = ref(null)
+const sessionId = ref(null)
+const sessionToken = ref('')
+const runtimeConfig = ref({ aiEnabled: true, aiTopK: 5, aiMaxTopK: 10 })
 
 const prompts = [
   '帮我总结最近的项目复盘',
@@ -132,8 +142,10 @@ const prompts = [
 
 const featuredArticle = computed(() => articles.value[0] || null)
 
-onMounted(() => {
+onMounted(async () => {
   keyword.value = route.query.keyword || ''
+  await restoreSession()
+  await loadRuntimeConfig()
   fetchArticles()
   fetchMoments()
 })
@@ -188,23 +200,36 @@ async function submitQuestion() {
   const content = inputText.value.trim()
   if (!content || streaming.value) return
 
+  const activeSessionId = await ensureSession()
   inputText.value = ''
   messages.value.push({ role: 'user', content })
   const assistantMessage = { role: 'assistant', content: '', sources: [] }
   messages.value.push(assistantMessage)
   streaming.value = true
+  const startedAt = Date.now()
   streamingStatus.value = '正在检索相关内容'
   await scrollMessages()
+
+  if (activeSessionId) {
+    appendAiMessage(activeSessionId, { role: 'user', content }, sessionToken.value).catch(() => {})
+  }
 
   try {
     const history = messages.value.slice(0, -1).map((message) => ({
       role: message.role,
       content: message.content,
     }))
+    if (!runtimeConfig.value.aiEnabled) {
+      throw new Error('AI 功能当前已关闭')
+    }
     const response = await fetch('/api/chat/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: content, history }),
+      body: JSON.stringify({
+        message: content,
+        history,
+        topK: runtimeConfig.value.aiTopK
+      }),
     })
     if (!response.ok || !response.body) throw new Error(`请求失败：${response.status}`)
 
@@ -245,10 +270,62 @@ async function submitQuestion() {
   } catch (error) {
     assistantMessage.content = `暂时无法完成回答。\n\n*${error.message || '请确认 AI 服务是否已启动'}*`
   } finally {
+    if (activeSessionId && assistantMessage.content) {
+      appendAiMessage(activeSessionId, {
+        role: 'assistant',
+        content: assistantMessage.content,
+        latencyMs: Date.now() - startedAt
+      }, sessionToken.value).catch(() => {})
+    }
     streamingStatus.value = ''
     streaming.value = false
     await scrollMessages()
   }
+}
+
+async function restoreSession() {
+  const storedId = Number(localStorage.getItem('atlasmind-ai-session') || 0)
+  const storedToken = localStorage.getItem('atlasmind-ai-session-token') || ''
+  if (!storedId || !storedToken) return
+  try {
+    const response = await getAiSessionMessages(storedId, storedToken)
+    sessionId.value = storedId
+    sessionToken.value = storedToken
+    messages.value = (response.data.data || []).map((message) => ({
+      role: message.role,
+      content: message.content,
+      sources: []
+    }))
+  } catch {
+    localStorage.removeItem('atlasmind-ai-session')
+    localStorage.removeItem('atlasmind-ai-session-token')
+  }
+}
+
+async function ensureSession() {
+  if (sessionId.value) return sessionId.value
+  try {
+    const response = await createAiSession({ source: 'FRONT', scope: 'GLOBAL' })
+    sessionId.value = response.data.data?.id || null
+    sessionToken.value = response.data.data?.ownerToken || ''
+    if (sessionId.value) {
+      localStorage.setItem('atlasmind-ai-session', String(sessionId.value))
+      localStorage.setItem('atlasmind-ai-session-token', sessionToken.value)
+    }
+    return sessionId.value
+  } catch {
+    return null
+  }
+}
+
+async function loadRuntimeConfig() {
+  try {
+    const response = await getRuntimeConfig()
+    runtimeConfig.value = {
+      ...runtimeConfig.value,
+      ...(response.data.data || {})
+    }
+  } catch {}
 }
 
 async function scrollMessages() {

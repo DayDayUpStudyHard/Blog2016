@@ -1,7 +1,8 @@
 """Chat API — SSE 流式对话 + RAG 检索（语义搜索优先，文本搜索降级）。"""
 import json
 import logging
-from fastapi import APIRouter, BackgroundTasks
+import secrets
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException
 from fastapi.responses import StreamingResponse
 from openai import APIError, APIConnectionError, AuthenticationError
 from app.models.schemas import ChatRequest, KbIngestRequest, KbQaRequest, KbReindexRequest, SuggestionResponse
@@ -16,6 +17,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 internal_router = APIRouter()
 kb_router = APIRouter()
+
+
+def _check_internal_token(token: str | None) -> None:
+    expected = settings.internal_token
+    if expected and (not token or not secrets.compare_digest(token, expected)):
+        raise HTTPException(status_code=401, detail="Invalid internal token")
 
 # 模块级延迟初始化（避免 import 时就连接外部服务导致启动失败）
 _es_service: ESService | None = None
@@ -119,7 +126,8 @@ async def chat_send(request: ChatRequest):
                     sources.extend(get_es().search_kb_by_keyword(request.message))
                 except Exception:
                     pass
-            sources = sorted(sources, key=lambda x: x.get("score", 0), reverse=True)[:settings.retrieval_top_k]
+            top_k = max(1, min(request.topK, 20))
+            sources = sorted(sources, key=lambda x: x.get("score", 0), reverse=True)[:top_k]
 
             # 3. 构建上下文 + 流式生成
             contexts = llm.build_context(sources)
@@ -244,22 +252,37 @@ async def health():
 
 
 @internal_router.post("/kb/ingest/jobs")
-async def ingest_job(request: KbIngestRequest, background_tasks: BackgroundTasks):
+async def ingest_job(
+    request: KbIngestRequest,
+    background_tasks: BackgroundTasks,
+    x_internal_token: str | None = Header(default=None),
+):
     """Java 后台触发文档导入。"""
+    _check_internal_token(x_internal_token)
     background_tasks.add_task(get_kb().ingest_document, request)
     return {"ok": True, "jobId": request.jobId}
 
 
 @internal_router.post("/kb/documents/{document_id}/reindex")
-async def reindex_document(document_id: int, request: KbReindexRequest, background_tasks: BackgroundTasks):
+async def reindex_document(
+    document_id: int,
+    request: KbReindexRequest,
+    background_tasks: BackgroundTasks,
+    x_internal_token: str | None = Header(default=None),
+):
     """使用 MySQL chunk 重建 ES 索引。"""
+    _check_internal_token(x_internal_token)
     background_tasks.add_task(get_kb().reindex_document, document_id, request.jobId)
     return {"ok": True, "jobId": request.jobId}
 
 
 @internal_router.delete("/kb/documents/{document_id}/index")
-async def delete_document_index(document_id: int):
+async def delete_document_index(
+    document_id: int,
+    x_internal_token: str | None = Header(default=None),
+):
     """从 ES 移除某文档索引。"""
+    _check_internal_token(x_internal_token)
     ok = get_es().delete_kb_document(document_id)
     return {"ok": ok}
 

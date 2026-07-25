@@ -10,6 +10,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     history: List[ChatMessage] = Field(default_factory=list)
+    topK: int = Field(default=5, ge=1, le=20)
 
 
 class SourceCitation(BaseModel):
@@ -48,4 +49,4 @@ class KbQaRequest(BaseModel):
     spaceId: Optional[int] = None
     documentId: Optional[int] = None
     includeArticles: bool = True
-    topK: int = 5
+    topK: int = Field(default=5, ge=1, le=20)

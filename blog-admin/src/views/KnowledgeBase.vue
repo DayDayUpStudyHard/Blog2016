@@ -7,6 +7,10 @@
         <p>把学习笔记、项目资料和面试复盘导入 RAG，统一进入博客助手的引用式问答。</p>
       </div>
       <div class="hero-actions">
+        <el-button @click="$router.push('/knowledge/jobs')">
+          <el-icon><Refresh /></el-icon>
+          任务中心
+        </el-button>
         <el-button @click="openSpaceDialog()">
           <el-icon><Plus /></el-icon>
           新建空间
@@ -89,7 +93,16 @@
         <div class="qa-box">
           <el-input v-model="qaForm.message" type="textarea" :rows="3" placeholder="输入一个面试题、项目问题或笔记关键词" />
           <div class="qa-actions">
-            <el-input-number v-model="qaForm.topK" :min="1" :max="10" size="small" />
+            <div class="top-k-control">
+              <span class="top-k-label">Top-K</span>
+              <el-tooltip
+                content="Top-K 表示最多返回的检索结果数量。数值越大，召回范围越广，但噪声也可能增加。"
+                placement="top"
+              >
+                <el-icon class="top-k-help"><InfoFilled /></el-icon>
+              </el-tooltip>
+              <el-input-number v-model="qaForm.topK" :min="1" :max="maxTopK" size="small" />
+            </div>
             <el-button type="primary" :loading="qaLoading" @click="runQaTest">
               <el-icon><Search /></el-icon>
               测试召回
@@ -220,10 +233,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Refresh, Search, Upload, UploadFilled } from '@element-plus/icons-vue'
+import { InfoFilled, Plus, Refresh, Search, Upload, UploadFilled } from '@element-plus/icons-vue'
 import {
   createKbSpace,
   deleteKbDocument,
+  getRuntimeSettings,
   getKbDocumentChunks,
   getKbDocuments,
   getKbSpaces,
@@ -260,6 +274,7 @@ const editingSpace = ref(null)
 const spaceForm = ref({ name: '', description: '', icon: 'book', color: '#2563eb', sort: 0, enabled: 1 })
 const uploadForm = ref({ spaceId: null, title: '' })
 const qaForm = ref({ message: '', documentId: null, topK: 5 })
+const maxTopK = ref(10)
 const qaResult = ref(null)
 
 const canUpload = computed(() => uploadForm.value.spaceId && selectedFile.value)
@@ -268,7 +283,18 @@ const qaHits = computed(() => qaResult.value?.hits || [])
 onMounted(async () => {
   await fetchSpaces()
   await fetchDocuments()
+  await fetchRuntimeSettings()
 })
+
+async function fetchRuntimeSettings() {
+  try {
+    const res = await getRuntimeSettings()
+    const settings = res.data.data || []
+    const values = Object.fromEntries(settings.map(item => [item.settingKey, item.settingValue]))
+    maxTopK.value = Number(values['ai.retrieval.max-top-k']) || 10
+    qaForm.value.topK = Math.min(Number(values['ai.retrieval.top-k']) || 5, maxTopK.value)
+  } catch {}
+}
 
 async function fetchSpaces() {
   spaceLoading.value = true
@@ -616,6 +642,24 @@ function formatScore(value) {
 
 .qa-actions {
   justify-content: space-between;
+}
+
+.top-k-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.top-k-label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.top-k-help {
+  color: #94a3b8;
+  cursor: help;
+  font-size: 15px;
 }
 
 .qa-result {

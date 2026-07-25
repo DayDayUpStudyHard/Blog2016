@@ -2,9 +2,12 @@ package com.blog.controller;
 
 import com.blog.common.Result;
 import com.blog.entity.User;
+import com.blog.service.SystemSettingService;
 import com.blog.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * 公开站点信息接口：返回站点拥有者的公开资料（昵称/头像/社交链接等），无需登录。
@@ -15,9 +18,15 @@ import org.springframework.web.bind.annotation.*;
 public class SiteController {
 
     private final UserService userService;
+    private final SystemSettingService systemSettingService;
 
     @GetMapping("/info")
     public Result<User> info() {
         return Result.ok(userService.getSiteInfo());
+    }
+
+    @GetMapping("/runtime-config")
+    public Result<Map<String, Object>> runtimeConfig() {
+        return Result.ok(systemSettingService.publicRuntimeConfig());
     }
 }

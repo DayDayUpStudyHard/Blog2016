@@ -28,8 +28,11 @@ export function login(data) { return api.post('/api/auth/login', data) }
 export function getUserInfo() { return api.get('/api/auth/info') }
 export function updateProfile(data) { return api.put('/api/auth/profile', data) }
 export function updatePassword(data) { return api.put('/api/auth/password', data) }
+export function getRuntimeSettings() { return api.get('/api/admin/settings/runtime') }
+export function updateRuntimeSettings(data) { return api.put('/api/admin/settings/runtime', data) }
 
 export function getAdminArticles(params) { return api.get('/api/admin/articles', { params }) }
+export function getDashboardOverview() { return api.get('/api/admin/dashboard/overview') }
 export function createArticle(data) { return api.post('/api/admin/articles', data) }
 export function updateArticle(id, data) { return api.put(`/api/admin/articles/${id}`, data) }
 export function getAdminArticleDetail(id) { return api.get(`/api/admin/articles/${id}`) }
@@ -87,6 +90,8 @@ export function permanentDeleteKbDocument(id) { return api.delete(`/api/admin/kb
 export function reparseKbDocument(id) { return api.post(`/api/admin/kb/documents/${id}/reparse`) }
 export function reindexKbDocument(id) { return api.post(`/api/admin/kb/documents/${id}/reindex`) }
 export function getKbJob(id) { return api.get(`/api/admin/kb/jobs/${id}`) }
+export function getKbJobs(params) { return api.get('/api/admin/kb/jobs', { params }) }
+export function retryKbJob(id) { return api.post(`/api/admin/kb/jobs/${id}/retry`) }
 export function testKbQa(data) { return api.post('/api/admin/kb/qa/test', data) }
 
 export function getKbNotifications(params) { return api.get('/api/admin/kb/notifications', { params }) }

@@ -4,6 +4,59 @@
 
 ---
 
+## 强化 Java 前后端与 Agent 知识工作台工程能力
+
+**日期**：2026-07-25
+
+### 调整
+
+- 新增 Java `AiGateway` 模块，统一封装 Spring Boot 到 Python AI 服务的导入、重建索引、删除索引和检索测试调用。
+- 新增知识库任务中心，支持任务分页、状态筛选、进度展示、失败原因和失败/等待任务重试。
+- 新增管理端 Dashboard 聚合接口 `/api/admin/dashboard/overview`，统一返回内容统计、知识库文档数、失败任务数和最近内容。
+- 新增用户端 AI 会话持久化，问题和回答写入 `kb_qa_session`、`kb_qa_message`，刷新页面后可以恢复历史消息。
+- 新增系统运行配置中心，支持动态调整 AI 默认 Top-K、最大 Top-K 和 AI 开关。
+- 用户端和管理端的检索请求统一读取运行配置，Top-K 不再只在管理端页面写死。
+- FastAPI Chat 请求增加 `topK` 参数，并对检索数量做范围校验。
+- AI 会话增加随机 `ownerToken`，用户端通过 `X-AI-Session-Token` 访问历史消息，避免仅凭会话 ID 读取或追加内容。
+- Python 内部知识库任务接口增加 `CHAT_ASSISTANT_TOKEN` 校验，Java 网关自动携带 `X-Internal-Token`。
+- 修正 Top-K 配置边界：当最大 Top-K 调小时，默认 Top-K 自动收敛到最大值；同时规范 AI 服务 URL 尾斜杠和最小超时时间。
+- 修正 `ai_session_security.sql` 对 MySQL 8.0.28 的兼容性，改用 `INFORMATION_SCHEMA` 判断字段后再执行幂等变更。
+
+### 新增接口
+
+| 接口 | 作用 |
+|------|------|
+| `GET /api/admin/dashboard/overview` | 管理端仪表盘聚合数据 |
+| `GET /api/admin/kb/jobs` | 知识库任务列表 |
+| `POST /api/admin/kb/jobs/{id}/retry` | 重试失败或等待中的任务 |
+| `POST /api/ai/sessions` | 创建用户端 AI 会话 |
+| `GET /api/ai/sessions/{id}/messages` | 查询会话消息 |
+| `POST /api/ai/sessions/{id}/messages` | 保存会话消息 |
+| `GET /api/admin/settings/runtime` | 查询运行配置 |
+| `PUT /api/admin/settings/runtime` | 更新运行配置 |
+| `GET /api/site/runtime-config` | 获取用户端公开运行配置 |
+
+### 数据库
+
+- 新增 `blog-server/sql/system_settings.sql`。
+- 新增 `blog-server/sql/ai_session_security.sql`，为已有数据库补充 AI 会话归属令牌。
+- 创建 `sys_setting` 表并写入默认配置：
+  - `ai.retrieval.top-k = 5`
+  - `ai.retrieval.max-top-k = 10`
+  - `ai.enabled = true`
+- 已在本地 `blog2026` 数据库执行迁移脚本。
+
+### 验证
+
+- `blog-server/.mvnw.cmd -q -DskipTests compile`：通过。
+- `blog-server/.mvnw.cmd -q test`：通过。
+- `blog-admin npm run build`：通过。
+- `blog-front npm run build`：通过；首次执行因本地 `node_modules` 不完整，使用现有 pnpm 离线缓存恢复依赖后复测通过。
+- `python -m compileall -q app`：通过。
+- `git diff --check`：通过。
+
+---
+
 ## 统一 AtlasMind 品牌显示与动态站点名称
 
 **日期**：2026-07-24

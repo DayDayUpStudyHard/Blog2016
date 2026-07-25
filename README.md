@@ -13,6 +13,66 @@ AtlasMind 将文章、Markdown/TXT/PDF 文档、项目记录和学习笔记统�
 - **Agent 交互**：基于检索结果回答问题，展示引用来源，支持连续追问
 - **个人成长**：用于学习复盘、项目分析、技术栈梳理和 Agent 面试准备
 
+## Java 前后端与 Agent 工程能力
+
+AtlasMind 不只是一个文档问答页面，Java 主后端负责业务编排和运行治理，Python 服务负责 AI/RAG 执行，两个 Vue 前端分别提供用户工作台和管理控制台。
+
+### 核心工程模块
+
+| 模块 | 能力 |
+|------|------|
+| Java `AiGateway` | 统一封装 Spring Boot 到 Python AI 服务的调用、超时、认证请求头和响应解析 |
+| 知识库任务中心 | 导入、解析、Embedding、索引任务的状态跟踪、进度展示、失败原因和重试 |
+| Dashboard 聚合 | `/api/admin/dashboard/overview` 一次返回内容、知识库和失败任务统计，减少前端多接口编排 |
+| AI 会话持久化 | Java 保存用户端 AI 会话、问题、回答和耗时，前端刷新后恢复历史消息 |
+| 系统配置中心 | 通过 `sys_setting` 动态维护默认 Top-K、最大 Top-K 和 AI 开关 |
+| 服务边界治理 | AI 会话使用客户端持有令牌隔离，Java 到 Python 的内部任务接口支持 `CHAT_ASSISTANT_TOKEN` 校验 |
+
+### 数据库迁移
+
+首次启用运行配置中心时执行：
+
+```bash
+mysql -u root -p blog2026 < blog-server/sql/system_settings.sql
+```
+
+默认配置为：
+
+```text
+ai.retrieval.top-k = 5
+ai.retrieval.max-top-k = 10
+ai.enabled = true
+```
+
+管理端可以在“个人设置 → AI 配置”中修改，用户端 AI 和管理端检索测试会读取最新配置。
+
+已有知识库数据库还需要执行一次 AI 会话安全迁移：
+
+```bash
+mysql -u root -p blog2026 < blog-server/sql/ai_session_security.sql
+```
+
+生产环境建议同时设置 `CHAT_ASSISTANT_TOKEN`，Java 主后端和 Python AI 服务使用同一个值，
+以保护文档导入、重建索引和删除索引等内部接口。
+
+### 前后端交互
+
+```text
+Vue 用户端
+  ├─ REST：文章、站点信息、AI 会话历史
+  └─ SSE：AI 流式回答
+       ↓
+Spring Boot 主后端
+  ├─ 用户、权限、内容、知识库任务和系统配置
+  ├─ Dashboard 聚合与通知中心
+  └─ AiGateway
+       ↓
+Python FastAPI AI 服务
+  ├─ 文档解析、切片和 Embedding
+  ├─ 向量/关键词混合检索
+  └─ LLM 流式生成
+```
+
 ## 项目定位
 
 | 层级 | 作用 |

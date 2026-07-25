@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS kb_qa_session (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     source VARCHAR(30) DEFAULT 'FRONT',
     scope VARCHAR(50) DEFAULT 'GLOBAL',
+    owner_token VARCHAR(64) NOT NULL,
     space_id BIGINT NULL,
     document_id BIGINT NULL,
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP

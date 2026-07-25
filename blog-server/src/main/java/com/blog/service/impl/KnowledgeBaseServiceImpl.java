@@ -7,13 +7,13 @@ import com.blog.entity.KbDocumentChunk;
 import com.blog.entity.KbIngestJob;
 import com.blog.entity.KbNotification;
 import com.blog.entity.KbSpace;
+import com.blog.gateway.AiGateway;
 import com.blog.mapper.KbDocumentChunkMapper;
 import com.blog.mapper.KbDocumentMapper;
 import com.blog.mapper.KbIngestJobMapper;
 import com.blog.mapper.KbNotificationMapper;
 import com.blog.mapper.KbSpaceMapper;
 import com.blog.service.KnowledgeBaseService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,13 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -49,17 +44,10 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     private final KbDocumentChunkMapper chunkMapper;
     private final KbIngestJobMapper jobMapper;
     private final KbNotificationMapper notificationMapper;
-    private final ObjectMapper objectMapper;
-
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(3))
-            .build();
+    private final AiGateway aiGateway;
 
     @Value("${blog.upload-path:upload/}")
     private String uploadPath;
-
-    @Value("${blog.chat-assistant.url:http://localhost:8088}")
-    private String chatAssistantUrl;
 
     @Value("${blog.embedding.model:}")
     private String embeddingModel;
@@ -219,7 +207,11 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         document.setDeleted(1);
         document.setStatus("DISABLED");
         documentMapper.updateById(document);
-        callPython("DELETE", "/internal/kb/documents/" + id + "/index", null);
+        try {
+            aiGateway.deleteDocumentIndex(id);
+        } catch (Exception e) {
+            createFailureNotification(Map.of("documentId", id), e.getMessage());
+        }
     }
 
     @Override
@@ -259,7 +251,11 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     @Transactional
     public void permanentDeleteDocument(Long id) throws IOException {
         KbDocument document = requireDocument(id);
-        callPython("DELETE", "/internal/kb/documents/" + id + "/index", null);
+        try {
+            aiGateway.deleteDocumentIndex(id);
+        } catch (Exception e) {
+            createFailureNotification(Map.of("documentId", id), e.getMessage());
+        }
         chunkMapper.hardDeleteByDocumentId(id);
         documentMapper.hardDeleteById(id);
         if (document.getFilePath() != null) {
@@ -269,12 +265,45 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
     @Override
     public Map<String, Object> qaTest(Map<String, Object> request) {
-        return requestPython("POST", "/api/kb/qa/test", request);
+        return aiGateway.testRetrieval(request);
     }
 
     @Override
     public KbIngestJob getJob(Long id) {
         return jobMapper.selectById(id);
+    }
+
+    @Override
+    public Page<KbIngestJob> listJobs(int page, int size, String status) {
+        LambdaQueryWrapper<KbIngestJob> query = new LambdaQueryWrapper<KbIngestJob>()
+                .orderByDesc(KbIngestJob::getCreateTime);
+        if (status != null && !status.isBlank()) {
+            query.eq(KbIngestJob::getStatus, status);
+        }
+        return jobMapper.selectPage(new Page<>(page, size), query);
+    }
+
+    @Override
+    @Transactional
+    public void retryJob(Long id) {
+        KbIngestJob previous = jobMapper.selectById(id);
+        if (previous == null) {
+            throw new IllegalArgumentException("任务不存在");
+        }
+        if (!List.of("FAILED", "PENDING").contains(previous.getStatus())) {
+            throw new IllegalArgumentException("只有失败或等待中的任务可以重试");
+        }
+
+        KbDocument document = requireDocument(previous.getDocumentId());
+        if (Integer.valueOf(1).equals(document.getDeleted())) {
+            throw new IllegalArgumentException("已删除文档不能重试");
+        }
+
+        if ("REINDEX".equals(previous.getJobType()) || "RESTORE".equals(previous.getJobType())) {
+            reindexDocument(document.getId());
+        } else {
+            reparseDocument(document.getId());
+        }
     }
 
     @Override
@@ -346,58 +375,53 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         body.put("title", document.getTitle());
         body.put("filePath", document.getFilePath());
         body.put("fileType", document.getFileType());
-        callPython("POST", "/internal/kb/ingest/jobs", body);
+        try {
+            aiGateway.triggerIngest(body);
+            markJobDispatched(job);
+        } catch (Exception e) {
+            createFailureNotification(body, e.getMessage());
+        }
     }
 
     private void triggerReindex(KbDocument document, KbIngestJob job) {
         Map<String, Object> body = new HashMap<>();
         body.put("documentId", document.getId());
         body.put("jobId", job.getId());
-        callPython("POST", "/internal/kb/documents/" + document.getId() + "/reindex", body);
-    }
-
-    private void callPython(String method, String path, Map<String, Object> body) {
         try {
-            requestPython(method, path, body);
+            aiGateway.triggerReindex(document.getId(), body);
+            markJobDispatched(job);
         } catch (Exception e) {
-            // Python 服务离线不阻止后台保存元数据，用户可稍后重新解析/索引。
             createFailureNotification(body, e.getMessage());
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> requestPython(String method, String path, Map<String, Object> body) {
-        try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(chatAssistantUrl + path))
-                    .timeout(Duration.ofSeconds(12));
-            if ("DELETE".equals(method)) {
-                builder.DELETE();
-            } else {
-                String json = body == null ? "{}" : objectMapper.writeValueAsString(body);
-                builder.POST(HttpRequest.BodyPublishers.ofString(json))
-                        .header("Content-Type", "application/json");
-            }
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() >= 400) {
-                throw new IllegalStateException("Python 服务返回 " + response.statusCode() + ": " + response.body());
-            }
-            if (response.body() == null || response.body().isBlank()) {
-                return Map.of();
-            }
-            return objectMapper.readValue(response.body(), Map.class);
-        } catch (Exception e) {
-            throw new IllegalStateException("调用 Python 知识库服务失败: " + e.getMessage(), e);
-        }
+    private void markJobDispatched(KbIngestJob job) {
+        job.setStatus("RUNNING");
+        job.setProgress(Math.max(5, job.getProgress() == null ? 0 : job.getProgress()));
+        job.setMessage("已提交 AI 服务处理");
+        job.setStartedAt(LocalDateTime.now());
+        jobMapper.updateById(job);
     }
 
     private void createFailureNotification(Map<String, Object> body, String message) {
+        Object jobId = body == null ? null : body.get("jobId");
+        if (jobId instanceof Number number) {
+            KbIngestJob job = jobMapper.selectById(number.longValue());
+            if (job != null) {
+                job.setStatus("FAILED");
+                job.setProgress(0);
+                job.setMessage("任务触发失败");
+                job.setErrorMessage(message);
+                job.setFinishedAt(LocalDateTime.now());
+                jobMapper.updateById(job);
+            }
+        }
+
         KbNotification notification = new KbNotification();
         notification.setType("INGEST_FAILED");
         notification.setTitle("知识库任务触发失败");
         notification.setContent(message);
         notification.setRelatedType("JOB");
-        Object jobId = body == null ? null : body.get("jobId");
         if (jobId instanceof Number number) {
             notification.setRelatedId(number.longValue());
         }

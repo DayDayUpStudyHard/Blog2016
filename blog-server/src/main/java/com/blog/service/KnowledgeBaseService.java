@@ -48,6 +48,10 @@ public interface KnowledgeBaseService {
 
     KbIngestJob getJob(Long id);
 
+    Page<KbIngestJob> listJobs(int page, int size, String status);
+
+    void retryJob(Long id);
+
     List<KbNotification> listNotifications(boolean unreadOnly);
 
     long countUnreadNotifications();

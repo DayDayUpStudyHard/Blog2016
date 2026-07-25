@@ -37,6 +37,10 @@ export function getSiteInfo() {
   return api.get('/api/site/info')
 }
 
+export function getRuntimeConfig() {
+  return api.get('/api/site/runtime-config')
+}
+
 export function getMoments(params) {
   return api.get('/api/moments', { params })
 }
@@ -67,6 +71,22 @@ export function searchArticles(keyword, params = {}) {
 
 export function getArchive() {
   return api.get('/api/articles/archive')
+}
+
+export function createAiSession(data = {}) {
+  return api.post('/api/ai/sessions', data)
+}
+
+export function getAiSessionMessages(sessionId, ownerToken) {
+  return api.get(`/api/ai/sessions/${sessionId}/messages`, {
+    headers: ownerToken ? { 'X-AI-Session-Token': ownerToken } : undefined
+  })
+}
+
+export function appendAiMessage(sessionId, data, ownerToken) {
+  return api.post(`/api/ai/sessions/${sessionId}/messages`, data, {
+    headers: ownerToken ? { 'X-AI-Session-Token': ownerToken } : undefined
+  })
 }
 
 export default api

@@ -107,54 +107,57 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getAdminArticles, getCategories, getAdminComments, getAdminMoments } from '../api/index.js'
+import { getDashboardOverview } from '../api/index.js'
 
 const loading = ref(false)
-const stats = ref({ articleCount: 0, categoryCount: 0, commentCount: 0, momentCount: 0 })
+const stats = ref({
+  articleCount: 0,
+  categoryCount: 0,
+  commentCount: 0,
+  momentCount: 0,
+  knowledgeDocumentCount: 0,
+  failedJobCount: 0
+})
 const recentArticles = ref([])
 const recentComments = ref([])
 
-const statItems = computed(() => [
+const statItems = computed(() => {
+  const items = [
   { label: '文章', value: stats.value.articleCount, hint: '公开内容资产' },
   { label: '分类', value: stats.value.categoryCount, hint: '知识结构入口' },
   { label: '评论', value: stats.value.commentCount, hint: '读者互动反馈' },
   { label: '说说', value: stats.value.momentCount, hint: '轻量动态记录' }
-])
+  ]
+  return [
+    ...items,
+    { label: '知识文档', value: stats.value.knowledgeDocumentCount, hint: '可用于 RAG 的资料' },
+    { label: '失败任务', value: stats.value.failedJobCount, hint: '需要重试的导入任务' }
+  ]
+})
 
 onMounted(fetchDashboard)
 
 async function fetchDashboard() {
   loading.value = true
   try {
-    const [articleResult, categoryResult, commentResult, momentResult] = await Promise.allSettled([
-      getAdminArticles({ page: 1, size: 5 }),
-      getCategories(),
-      getAdminComments({ page: 1, size: 5 }),
-      getAdminMoments({ page: 1, size: 1 })
-    ])
+    const response = await getDashboardOverview()
+    const data = response.data.data || {}
 
-    const articleData = unwrapData(articleResult, { records: [], total: 0 })
-    const categoryData = unwrapData(categoryResult, [])
-    const commentData = unwrapData(commentResult, { records: [], total: 0 })
-    const momentData = unwrapData(momentResult, { records: [], total: 0 })
-
-    recentArticles.value = articleData.records || []
-    recentComments.value = commentData.records || []
+    recentArticles.value = data.recentArticles || []
+    recentComments.value = data.recentComments || []
     stats.value = {
-      articleCount: Number(articleData.total) || 0,
-      categoryCount: Array.isArray(categoryData) ? categoryData.length : 0,
-      commentCount: Number(commentData.total) || 0,
-      momentCount: Number(momentData.total) || 0
+      articleCount: Number(data.articleCount) || 0,
+      categoryCount: Number(data.categoryCount) || 0,
+      commentCount: Number(data.commentCount) || 0,
+      momentCount: Number(data.momentCount) || 0,
+      knowledgeDocumentCount: Number(data.knowledgeDocumentCount) || 0,
+      failedJobCount: Number(data.failedJobCount) || 0
     }
   } finally {
     loading.value = false
   }
 }
 
-function unwrapData(result, fallback) {
-  if (result.status !== 'fulfilled') return fallback
-  return result.value?.data?.data ?? fallback
-}
 </script>
 
 <style scoped>

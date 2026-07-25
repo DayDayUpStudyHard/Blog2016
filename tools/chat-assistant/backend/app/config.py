@@ -39,6 +39,7 @@ class Settings:
     chat_max_tokens: int = int(os.getenv("CHAT_MAX_TOKENS", "2048"))
     chat_temperature: float = float(os.getenv("CHAT_TEMPERATURE", "0.7"))
     retrieval_top_k: int = int(os.getenv("RETRIEVAL_TOP_K", "5"))
+    internal_token: str = os.getenv("CHAT_ASSISTANT_TOKEN", "")
 
     def validate(self) -> list[str]:
         """启动时校验必要配置，返回错误列表（空列表 = 全部 OK）。"""

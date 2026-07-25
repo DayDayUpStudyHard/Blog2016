@@ -44,6 +44,32 @@
             </el-form-item>
           </el-form>
         </el-tab-pane>
+        <el-tab-pane name="runtime">
+          <template #label>
+            <span class="tab-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+              AI 配置
+            </span>
+          </template>
+          <el-form :model="runtimeForm" label-width="110px" class="settings-form">
+            <el-form-item label="默认 Top-K">
+              <el-input-number v-model="runtimeForm.topK" :min="1" :max="runtimeForm.maxTopK" />
+              <span class="field-hint">用户端 AI 默认召回数量</span>
+            </el-form-item>
+            <el-form-item label="最大 Top-K">
+              <el-input-number v-model="runtimeForm.maxTopK" :min="1" :max="20" />
+              <span class="field-hint">限制用户端和检索测试的最大召回数量</span>
+            </el-form-item>
+            <el-form-item label="启用 AI">
+              <el-switch v-model="runtimeForm.aiEnabled" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="saveRuntimeSettings" :loading="saving">
+                保存 AI 配置
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </el-tab-pane>
         <el-tab-pane name="password">
           <template #label>
             <span class="tab-label">
@@ -74,13 +100,20 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getUserInfo, updateProfile as updateProfileApi, updatePassword as updatePasswordApi } from '../api/index.js'
+import {
+  getRuntimeSettings,
+  getUserInfo,
+  updateProfile as updateProfileApi,
+  updatePassword as updatePasswordApi,
+  updateRuntimeSettings
+} from '../api/index.js'
 
 const activeTab = ref('profile')
 const saving = ref(false)
 const profile = ref({ nickname: '', email: '', avatar: '', bio: '' })
 const passwordForm = ref({ oldPassword: '', newPassword: '' })
 const socialLinks = ref([])
+const runtimeForm = ref({ topK: 5, maxTopK: 10, aiEnabled: true })
 
 onMounted(async () => {
   try {
@@ -89,7 +122,37 @@ onMounted(async () => {
     profile.value = { nickname: user.nickname || '', email: user.email || '', avatar: user.avatar || '', bio: user.bio || '' }
     try { socialLinks.value = JSON.parse(user.socialLinks || '[]') } catch { socialLinks.value = [] }
   } catch {}
+  await loadRuntimeSettings()
 })
+
+async function loadRuntimeSettings() {
+  try {
+    const res = await getRuntimeSettings()
+    const settings = res.data.data || []
+    const values = Object.fromEntries(settings.map(item => [item.settingKey, item.settingValue]))
+    runtimeForm.value = {
+      topK: Number(values['ai.retrieval.top-k']) || 5,
+      maxTopK: Number(values['ai.retrieval.max-top-k']) || 10,
+      aiEnabled: values['ai.enabled'] !== 'false'
+    }
+  } catch {}
+}
+
+async function saveRuntimeSettings() {
+  if (runtimeForm.value.topK > runtimeForm.value.maxTopK) {
+    ElMessage.warning('默认 Top-K 不能大于最大 Top-K')
+    return
+  }
+  saving.value = true
+  try {
+    await updateRuntimeSettings({
+      'ai.retrieval.top-k': runtimeForm.value.topK,
+      'ai.retrieval.max-top-k': runtimeForm.value.maxTopK,
+      'ai.enabled': runtimeForm.value.aiEnabled
+    })
+    ElMessage.success('AI 配置已保存')
+  } finally { saving.value = false }
+}
 
 async function updateProfile() {
   saving.value = true
@@ -141,4 +204,5 @@ async function updatePassword() {
 
 .social-links-editor { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .social-row { display: flex; gap: 6px; align-items: center; }
+.field-hint { color: #94a3b8; font-size: 12px; margin-left: 10px; }
 </style>
