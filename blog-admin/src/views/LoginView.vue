@@ -3,7 +3,10 @@
     <div class="login-card">
       <div class="card-inner">
         <div class="logo">
-          <span class="logo-icon">B</span>
+          <svg class="logo-mark" viewBox="0 0 28 28" aria-hidden="true">
+            <path d="M4 4h16v16H4z" />
+            <path d="M8 8h16v16H8z" />
+          </svg>
           <span class="logo-text">AtlasMind</span>
         </div>
         <p class="subtitle">管理后台</p>
@@ -116,11 +119,21 @@ async function doLogin() {
 
 .logo-icon {
   width: 36px; height: 36px; border-radius: 10px;
-  background: linear-gradient(135deg, #409EFF, #66b1ff); color: #fff;
+  background: #426fa6; color: #fff;
   font-size: 18px; font-weight: 700;
   display: flex; align-items: center; justify-content: center;
   animation: iconPulse 2s ease-in-out infinite;
   animation-delay: 1s;
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: #426fa6;
+  stroke-width: 2;
+  stroke-linejoin: round;
 }
 
 @keyframes iconPulse {
@@ -189,4 +202,46 @@ async function doLogin() {
 }
 [data-theme="dark"] .logo-text { color: #e2e8f0; }
 [data-theme="dark"] .subtitle { color: #94a3b8; }
+[data-theme="dark"] .logo-mark { stroke: #8fb1d8; }
+
+/* Hallmark | quiet login surface */
+.login-page {
+  background: #f3f6fa;
+}
+
+.card-inner {
+  background: #fbfcfe;
+  border: 1px solid #d4dde8;
+  border-radius: 4px;
+  box-shadow: 0 12px 28px rgba(31, 45, 61, 0.08);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.logo-text {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.login-btn {
+  background: #426fa6 !important;
+  border-color: #426fa6 !important;
+  box-shadow: none;
+}
+
+.login-btn:hover {
+  background: #315987 !important;
+  border-color: #315987 !important;
+  box-shadow: none;
+  transform: none;
+}
+
+[data-theme="dark"] .login-page {
+  background: #152235;
+}
+
+[data-theme="dark"] .card-inner {
+  background: #1d2d42;
+  border-color: rgba(218, 229, 241, 0.14);
+  box-shadow: none;
+}
 </style>

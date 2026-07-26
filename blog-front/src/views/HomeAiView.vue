@@ -390,4 +390,78 @@ async function scrollMessages() {
 .list-enter-from { opacity: 0; transform: translateY(10px); }
 @media (max-width: 960px) { .blog-layout { grid-template-columns: 1fr; } .blog-aside { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .home-ai-page { gap: 40px; } .ai-stage { min-height: 400px; padding: 24px 0 18px; } .ai-welcome h1 { font-size: 42px; } .ai-welcome p { font-size: 14px; } .ai-composer { margin-top: 24px; } .section-heading { align-items: flex-start; flex-direction: column; gap: 10px; } .section-heading h2 { font-size: 26px; } .blog-aside { grid-template-columns: 1fr; } }
+
+/* Hallmark | Workbench surface: calm question field, blue ink, no AI gradients */
+.ai-welcome h1,
+.section-heading h2,
+.featured-entry strong {
+  font-family: var(--blog-font-display);
+}
+
+.eyebrow,
+.section-kicker,
+.aside-kicker {
+  color: var(--blog-primary);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ai-composer {
+  background: var(--blog-surface);
+  border-color: var(--blog-border);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.ai-composer:focus-within {
+  border-color: var(--blog-primary);
+  box-shadow: 0 0 0 3px rgba(66, 111, 166, 0.12);
+}
+
+.send-button {
+  background: var(--blog-primary);
+  border-radius: 3px;
+}
+
+.send-button:hover:not(:disabled) {
+  background: var(--blog-primary-dark);
+  transform: none;
+}
+
+.prompt-chip {
+  color: var(--blog-primary);
+  border-color: var(--blog-border);
+  border-radius: 3px;
+  background: transparent;
+}
+
+.prompt-chip:hover {
+  color: var(--blog-primary-dark);
+  background: var(--blog-surface-soft);
+  border-color: var(--blog-primary);
+}
+
+.message.user {
+  background: var(--blog-primary);
+  border-radius: 4px;
+}
+
+.message.assistant {
+  border-left-color: var(--blog-primary);
+}
+
+.source-link,
+.featured-entry,
+.moments-entry {
+  border-radius: 4px;
+}
+
+.source-link {
+  background: var(--blog-surface-soft);
+  border-color: var(--blog-border);
+}
+
+.section-link {
+  color: var(--blog-primary);
+}
 </style>

@@ -199,7 +199,7 @@ async function doDelete(id) {
   font-size: 11px; font-weight: 500;
   padding: 3px 9px; border-radius: 999px;
 }
-.visibility-badge.public { color: #1d4ed8; background: #eff6ff; }
+.visibility-badge.public { color: #315987; background: #eff6ff; }
 .visibility-badge.rag_only { color: #6d28d9; background: #f5f3ff; }
 .visibility-badge.private { color: #64748b; background: #f1f5f9; }
 
@@ -215,8 +215,8 @@ async function doDelete(id) {
 }
 .action-btn.preview { color: #047857; border-color: #d1fae5; }
 .action-btn.preview:hover { background: #ecfdf5; border-color: #10b981; }
-.action-btn.edit { color: #1d4ed8; border-color: #dbeafe; }
-.action-btn.edit:hover { background: #eff6ff; border-color: #2563eb; }
+.action-btn.edit { color: #315987; border-color: #dbeafe; }
+.action-btn.edit:hover { background: #eff6ff; border-color: #426fa6; }
 .action-btn.delete { color: #dc2626; border-color: #fee2e2; }
 .action-btn.delete:hover { background: #fef2f2; border-color: #ef4444; }
 

@@ -104,7 +104,7 @@ onMounted(() => fetchData())
   font-size: 12px; font-weight: 500;
 }
 .type-tag.CREATE { background: #e6f7e6; color: #10b981; }
-.type-tag.UPDATE { background: #ecf5ff; color: #409EFF; }
+.type-tag.UPDATE { background: #ecf5ff; color: #426fa6; }
 .type-tag.DELETE { background: #fef0f0; color: #f56c6c; }
 .type-tag.OTHER { background: #f5f7fa; color: #909399; }
 

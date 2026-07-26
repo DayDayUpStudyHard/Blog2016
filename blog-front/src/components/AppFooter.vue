@@ -17,12 +17,12 @@
 
 .footer-divider {
   height: 1px; margin-bottom: 20px;
-  background: linear-gradient(90deg, transparent, #d0d5dd 20%, #d0d5dd 80%, transparent);
+  background: var(--blog-border);
 }
 
 .footer-bottom {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  font-size: 13px; color: #909399;
+  font-size: 13px; color: var(--blog-muted);
 }
-.separator { color: #d0d5dd; }
+.separator { color: var(--blog-border-strong); }
 </style>

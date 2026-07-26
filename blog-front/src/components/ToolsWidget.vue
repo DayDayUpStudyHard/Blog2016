@@ -156,7 +156,7 @@ onUnmounted(() => {
 }
 .tools-trigger:hover, .tools-trigger.active {
   transform: translateY(-2px);
-  color: #409EFF;
+  color: #426fa6;
   box-shadow: 0 4px 12px rgba(64,158,255,0.15), 0 8px 24px rgba(0,0,0,0.08);
 }
 
@@ -242,7 +242,7 @@ onUnmounted(() => {
 }
 .loading-spinner {
   width: 32px; height: 32px; border: 3px solid #e8ecf0;
-  border-top-color: #409EFF; border-radius: 50%;
+  border-top-color: #426fa6; border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -255,8 +255,8 @@ onUnmounted(() => {
 .iframe-error p { font-size: 16px; font-weight: 600; color: #606266; margin: 0; }
 .iframe-error span { font-size: 13px; color: #c0c4cc; }
 .retry-btn {
-  margin-top: 8px; padding: 6px 20px; border: 1px solid #409EFF; border-radius: 8px;
-  background: #fff; color: #409EFF; cursor: pointer; font-size: 14px;
+  margin-top: 8px; padding: 6px 20px; border: 1px solid #426fa6; border-radius: 8px;
+  background: #fff; color: #426fa6; cursor: pointer; font-size: 14px;
   transition: all 0.15s;
 }
 .retry-btn:hover { background: #ecf5ff; }

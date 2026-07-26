@@ -125,8 +125,8 @@ async function doDelete(id) {
   font-size: 11px; cursor: pointer;
   transition: all 0.2s; background: none;
 }
-.action-btn.edit { color: #409EFF; border-color: #d9ecff; }
-.action-btn.edit:hover { background: #ecf5ff; border-color: #409EFF; transform: translateY(-1px); }
+.action-btn.edit { color: #426fa6; border-color: #d9ecff; }
+.action-btn.edit:hover { background: #ecf5ff; border-color: #426fa6; transform: translateY(-1px); }
 .action-btn.del { color: #f56c6c; border-color: #fde2e2; }
 .action-btn.del:hover { background: #fef0f0; border-color: #f56c6c; transform: translateY(-1px); }
 .pagination { margin-top: 20px; display: flex; justify-content: flex-end; }

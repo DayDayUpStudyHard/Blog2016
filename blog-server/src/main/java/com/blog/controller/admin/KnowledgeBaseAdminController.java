@@ -81,8 +81,36 @@ public class KnowledgeBaseAdminController {
     public Result<Map<String, Object>> upload(
             @RequestParam Long spaceId,
             @RequestParam MultipartFile file,
-            @RequestParam(required = false) String title) throws IOException {
-        return Result.ok(knowledgeBaseService.uploadDocument(spaceId, file, title));
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String parseMode) throws IOException {
+        return Result.ok(knowledgeBaseService.uploadDocument(spaceId, file, title, parseMode));
+    }
+
+    @OperationLog(value = "上传知识库文档分片", type = "CREATE")
+    @PostMapping("/documents/upload/chunk")
+    public Result<Map<String, Object>> uploadChunk(
+            @RequestParam String uploadId,
+            @RequestParam String fileName,
+            @RequestParam long fileSize,
+            @RequestParam int chunkIndex,
+            @RequestParam int totalChunks,
+            @RequestParam MultipartFile chunk) throws IOException {
+        return Result.ok(knowledgeBaseService.uploadDocumentChunk(
+                uploadId, fileName, fileSize, chunkIndex, totalChunks, chunk));
+    }
+
+    @OperationLog(value = "合并知识库文档分片", type = "CREATE")
+    @PostMapping("/documents/upload/complete")
+    public Result<Map<String, Object>> completeChunkedUpload(
+            @RequestParam Long spaceId,
+            @RequestParam String uploadId,
+            @RequestParam String fileName,
+            @RequestParam long fileSize,
+            @RequestParam int totalChunks,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String parseMode) throws IOException {
+        return Result.ok(knowledgeBaseService.completeChunkedUpload(
+                spaceId, uploadId, fileName, fileSize, totalChunks, title, parseMode));
     }
 
     @OperationLog(value = "导入 Debug 修复记录", type = "CREATE")

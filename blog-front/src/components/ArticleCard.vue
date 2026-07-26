@@ -115,10 +115,8 @@ function formatDate(dateStr) {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1e293b;
-  background:
-    linear-gradient(135deg, rgba(37,99,235,0.08), rgba(15,118,110,0.08)),
-    #f8fafc;
+  color: var(--blog-primary);
+  background: var(--blog-surface-soft);
 }
 
 .cover.placeholder span {
@@ -143,7 +141,7 @@ function formatDate(dateStr) {
   display: inline-flex;
   align-items: center;
   height: 22px;
-  border-radius: 999px;
+  border-radius: 3px;
   font-size: 12px;
   line-height: 1;
 }

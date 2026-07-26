@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS kb_document (
     file_size BIGINT DEFAULT 0,
     file_path VARCHAR(500) NOT NULL,
     status VARCHAR(30) DEFAULT 'UPLOADED',
+    parse_mode VARCHAR(20) DEFAULT 'OCR',
     chunk_count INT DEFAULT 0,
     embedding_model VARCHAR(100),
     embedding_dim INT DEFAULT 2560,

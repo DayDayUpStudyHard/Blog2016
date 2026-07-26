@@ -90,13 +90,13 @@ async function doDelete(id) {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .tag-card:hover {
-  border-color: #409EFF;
+  border-color: #426fa6;
   background: #f0f7ff;
   box-shadow: 0 4px 16px rgba(64,158,255,0.1);
   transform: translateY(-2px);
 }
 
-.tag-name { font-size: 13px; color: #409EFF; font-weight: 500; }
+.tag-name { font-size: 13px; color: #426fa6; font-weight: 500; }
 .tag-id { font-size: 11px; color: #c0c4cc; }
 .tag-close-btn {
   background: none; border: none; color: #c0c4cc; font-size: 16px; cursor: pointer;

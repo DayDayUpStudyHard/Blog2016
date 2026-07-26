@@ -20,8 +20,8 @@
       <div class="message-list">
         <div v-for="m in messages" :key="m.id" class="message-card">
           <div class="msg-header">
-            <n-avatar :size="36" class="msg-avatar" :style="{ background: 'linear-gradient(135deg, #ecf5ff, #d9ecff)' }">
-              <span style="font-weight:600;color:#409EFF">{{ m.author.charAt(0) }}</span>
+            <n-avatar :size="36" class="msg-avatar" :style="{ background: '#eaf0f7' }">
+              <span style="font-weight:600;color:#426fa6">{{ m.author.charAt(0) }}</span>
             </n-avatar>
             <div class="msg-meta">
               <span class="msg-author">{{ m.author }}</span>

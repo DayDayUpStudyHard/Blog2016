@@ -5,7 +5,10 @@
         <div class="sidebar-inner">
           <div class="logo">
             <router-link to="/" class="logo-link">
-              <span class="logo-icon">B</span>
+              <svg class="logo-mark" viewBox="0 0 28 28" aria-hidden="true">
+                <path d="M4 4h16v16H4z" />
+                <path d="M8 8h16v16H8z" />
+              </svg>
               <span class="logo-copy">
                 <span class="logo-text">AtlasMind</span>
                 <span class="logo-subtitle">Content Studio</span>
@@ -257,8 +260,8 @@ async function markAllRead() {
 }
 .sidebar-inner {
   height: 100%; display: flex; flex-direction: column;
-  background: #0f172a;
-  border-right: 1px solid rgba(255,255,255,0.06);
+  background: #25364a;
+  border-right: 1px solid #31465f;
 }
 
 /* Logo */
@@ -273,6 +276,15 @@ async function markAllRead() {
   color: #0f172a; font-size: 16px; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
 }
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: #8fb1d8;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
 .logo-copy { display: flex; flex-direction: column; line-height: 1.15; }
 .logo-text { font-size: 17px; font-weight: 700; color: #f8fafc; letter-spacing: 0; }
 .logo-subtitle { font-size: 11px; color: #94a3b8; margin-top: 2px; }
@@ -281,7 +293,7 @@ async function markAllRead() {
 .menu { flex: 1; border-right: none !important; padding: 8px 0; position: relative; background: transparent; }
 .menu :deep(.el-menu-item) {
   font-size: 13px; color: #cbd5e1;
-  margin: 3px 10px; border-radius: 8px; padding: 0 16px !important; height: 40px;
+  margin: 3px 10px; border-radius: 4px; padding: 0 16px !important; height: 40px;
   transition: all 0.2s; display: flex; align-items: center; gap: 8px;
   position: relative; overflow: visible;
 }
@@ -289,8 +301,8 @@ async function markAllRead() {
   background: rgba(255,255,255,0.08); color: #ffffff;
 }
 .menu :deep(.el-menu-item.is-active) {
-  background: #e5e7eb !important;
-  color: #0f172a !important;
+  background: #e8eff7 !important;
+  color: #243b53 !important;
   font-weight: 600;
   box-shadow: none;
 }
@@ -300,7 +312,7 @@ async function markAllRead() {
   position: absolute; left: -6px; top: 50%; transform: translateY(-50%);
   width: 3px; height: 20px;
   border-radius: 0 3px 3px 0;
-  background: #60a5fa;
+  background: #8fb1d8;
 }
 .menu-icon { display: flex; align-items: center; opacity: 0.55; flex-shrink: 0; transition: all 0.3s; }
 .menu :deep(.el-menu-item.is-active) .menu-icon { opacity: 1; }
@@ -329,8 +341,8 @@ async function markAllRead() {
 
 /* Topbar */
 .topbar {
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: #fbfcfe;
+  border-bottom: 1px solid #d4dde8;
   display: flex; align-items: center; justify-content: space-between;
   height: 58px; padding: 0 28px;
   position: sticky; top: 0; z-index: 10; flex-shrink: 0;
@@ -344,7 +356,7 @@ async function markAllRead() {
   padding: 6px 12px; border-radius: 6px;
   border: 1px solid #e4e7ed; transition: all 0.2s;
 }
-.action-btn:hover { color: #409EFF; border-color: #409EFF; background: #f0f7ff; }
+.action-btn:hover { color: #426fa6; border-color: #426fa6; background: #eef3f8; }
 .theme-toggle {
   display: flex; align-items: center; padding: 6px 10px;
   background: none; border: 1px solid transparent; border-radius: 6px;
@@ -369,7 +381,7 @@ async function markAllRead() {
 .notification-head button {
   border: none;
   background: transparent;
-  color: #2563eb;
+  color: #426fa6;
   cursor: pointer;
   font-size: 12px;
 }
@@ -414,6 +426,23 @@ async function markAllRead() {
 .main-area {
   padding: 28px;
   overflow-y: auto;
-  background: #f6f7fb;
+  background: #f3f6fa;
+}
+
+.topbar-path {
+  font-family: Georgia, 'Times New Roman', serif;
+  color: #1f2d3d;
+}
+
+.action-btn,
+.theme-toggle,
+.logout-btn {
+  border-radius: 4px;
+}
+
+.theme-toggle:hover {
+  color: #426fa6;
+  border-color: #c8d7e8;
+  background: #eef3f8;
 }
 </style>

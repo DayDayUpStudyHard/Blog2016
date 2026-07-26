@@ -3,7 +3,7 @@
     <section class="home-hero">
       <div class="identity">
         <n-avatar v-if="siteInfo.avatar" :src="siteInfo.avatar" :size="64" class="hero-avatar" />
-        <n-avatar v-else :size="64" class="hero-avatar" :style="{ background: '#111827' }">
+        <n-avatar v-else :size="64" class="hero-avatar" :style="{ background: 'var(--blog-primary)' }">
           <span style="font-size:26px;font-weight:700">{{ (siteInfo.nickname || 'B').charAt(0) }}</span>
         </n-avatar>
 
@@ -531,5 +531,79 @@ async function fetchData() {
   .side-rail {
     grid-template-columns: 1fr;
   }
+}
+
+/* Hallmark | Workbench surface: editorial type with restrained blue accents */
+.home-page {
+  gap: 32px;
+}
+
+.identity,
+.hero-panel,
+.rail-card {
+  background: var(--blog-surface);
+  border-color: var(--blog-border);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.identity h1,
+.hero-panel h2,
+.section-head h2,
+.rail-title,
+.featured-link strong {
+  font-family: var(--blog-font-display);
+  font-weight: 700;
+}
+
+.eyebrow,
+.section-kicker,
+.panel-kicker,
+.featured-label {
+  color: var(--blog-primary);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.hero-avatar {
+  box-shadow: none;
+}
+
+.social-link,
+.metric-row div {
+  background: var(--blog-surface-soft);
+  border-color: var(--blog-border);
+  border-radius: 4px;
+}
+
+.social-link:hover {
+  color: var(--blog-primary);
+  border-color: var(--blog-primary);
+  transform: none;
+}
+
+.panel-status {
+  color: var(--blog-primary);
+  background: rgba(66, 111, 166, 0.1);
+  border-radius: 3px;
+}
+
+.archive-link {
+  color: var(--blog-primary);
+}
+
+.rail-card {
+  padding: 20px;
+}
+
+.moment-card,
+.featured-link {
+  border-color: var(--blog-border);
+}
+
+[data-theme="dark"] .identity,
+[data-theme="dark"] .hero-panel,
+[data-theme="dark"] .rail-card {
+  box-shadow: none;
 }
 </style>

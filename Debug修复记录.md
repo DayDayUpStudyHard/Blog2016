@@ -4,6 +4,344 @@
 
 ---
 
+## 知识库 PDF 三档解析模式：快速解析、扫描 OCR、高质量 MinerU
+
+**日期**：2026-07-27
+
+### 背景
+
+- 单一 PDF 解析策略无法同时满足速度、资源成本和解析质量。
+- 普通文字型 PDF 适合快速 `pypdf` 提取；扫描版 PDF 需要 PaddleOCR；论文、教材和复杂版式文档更适合 MinerU 这类高质量文档解析器。
+- 为了让项目更像工业系统，需要把解析能力做成可选择、可落库、可追踪的分层能力，而不是所有文件都走同一条重解析链路。
+
+### 修复
+
+- 新增三档解析模式：
+  - `FAST`：快速解析，只读取 PDF 文字层。
+  - `OCR`：扫描 OCR，文字层优先，低文字页调用 PaddleOCR。
+  - `MINERU`：高质量解析，进入 MinerU provider，默认关闭。
+- `kb_document` 新增 `parse_mode` 字段，上传时落库，重解析时沿用该文档的解析模式。
+- Java 后台上传接口新增 `parseMode` 参数，并在触发 Python 导入任务时透传。
+- 管理端 `/knowledge` 上传表单新增“解析模式”分段控件，文档表新增解析模式展示列。
+- Python `KbIngestRequest` 新增 `parseMode`，`DocumentParser` 根据模式选择 `pypdf`、PaddleOCR 或 MinerU。
+- 新增 `mineru_service.py`，保留 MinerU 命令式 provider 边界；默认 `MINERU_ENABLED=false`，未启用时给出明确错误。
+- `.env.example` 新增：
+  - `PDF_PARSE_PROVIDER=auto`
+  - `MINERU_ENABLED=false`
+  - `MINERU_COMMAND=magic-pdf -p {input} -o {output}`
+  - `MINERU_OUTPUT_DIR=.mineru-output`
+- `.gitignore` 忽略 `.mineru-output/`，避免临时解析产物进入仓库。
+
+### 数据迁移
+
+```sql
+ALTER TABLE kb_document ADD COLUMN parse_mode VARCHAR(20) DEFAULT 'OCR' AFTER status;
+UPDATE kb_document SET parse_mode = 'FAST' WHERE UPPER(file_type) <> 'PDF';
+```
+
+历史数据已修正：
+
+- PDF 文档：`parse_mode=OCR`
+- Markdown/TXT 文档：`parse_mode=FAST`
+
+### 验证
+
+- `python -m compileall -q tools/chat-assistant/backend/app`：通过。
+- `blog-admin npm run build`：通过。
+- `blog-server mvnw.cmd -q -DskipTests compile`：通过。
+- `FAST` 模式测试：扫描版《算法导论》只读到第 798 页起的文字层。
+- `OCR` 模式测试：扫描版《算法导论》第 1 页可通过 PaddleOCR 识别出封面文字。
+- `MINERU` 模式测试：默认关闭时返回“高质量解析需要先启用 MINERU_ENABLED=true，并安装/配置 MinerU”。
+- 重启 Java 后端后，`/api/admin/kb/documents` 已返回 `parseMode` 字段。
+
+### 说明
+
+- 当前默认上传模式为 `OCR`，对文字型 PDF 仍优先走 `pypdf`，不会无脑 OCR 全文。
+- MinerU 暂未安装，当前实现的是工业化 provider 边界、配置项和前后端链路；后续安装 MinerU 后只需调整 `MINERU_COMMAND` 并启用开关。
+
+---
+
+## 知识库扫描版 PDF OCR 能力预留与本地 PaddleOCR 接入
+
+**日期**：2026-07-26
+
+### 问题
+
+- 扫描版 PDF 没有文字层，`pypdf.extract_text()` 只能返回空文本，导致大部分正文页无法进入切片、Embedding 和 RAG 检索。
+- 例如 `算法导论 原书第3版_13234228.pdf` 共 805 页，只有第 798-805 页能提取到文字，前 797 页是图片页，因此最终只生成 8 个 chunk。
+- 如果直接把 OCR 做进主依赖，会让普通知识库导入也被迫安装 PaddleOCR/PyMuPDF 等重型包，不利于开发和部署。
+
+### 修复
+
+- 新增 `tools/chat-assistant/backend/app/services/ocr_service.py`：
+  - 本地 OCR provider 使用 PaddleOCR。
+  - PDF 页面渲染使用 PyMuPDF。
+  - 云 OCR 预留 `OCR_PROVIDER=cloud`、`CLOUD_OCR_BASE_URL`、`CLOUD_OCR_API_KEY` 配置位，当前不绑定具体厂商。
+- 修改 `DocumentParser._iter_pdf()`：
+  - 默认优先读取 PDF 文字层。
+  - 当页面可提取文本少于 `OCR_MIN_TEXT_CHARS` 且 `OCR_ENABLED=true` 时，才对该页执行 OCR。
+  - 支持 `OCR_MAX_PAGES` 控制单文档 OCR 页数上限。
+- 修改 `KbService._parse_and_store_chunks()`：
+  - PDF 解析过程中回写任务进度。
+  - OCR 页显示 `OCR 识别 x/y 页`，管理端可轮询展示。
+- 管理端知识库页面新增 `OCR` 任务状态文案和轮询活跃状态。
+- 拆分可选依赖：
+  - 主依赖仍使用 `requirements.txt`。
+  - OCR 依赖放入 `requirements-ocr.txt`，只在启用 OCR 的机器安装。
+- `.env.example` 和本地 `.env` 增加 OCR 配置项，默认 `OCR_ENABLED=false`，避免未安装 OCR 依赖时影响普通导入。
+
+### 修改文件
+
+| 文件 | 变更 |
+|------|------|
+| `tools/chat-assistant/backend/app/config.py` | 新增 OCR 和云 OCR 预留配置 |
+| `tools/chat-assistant/backend/app/services/ocr_service.py` | 新增本地 PaddleOCR provider |
+| `tools/chat-assistant/backend/app/services/document_parser.py` | PDF 无文字页按配置进入 OCR |
+| `tools/chat-assistant/backend/app/services/kb_service.py` | OCR/解析阶段进度回写 |
+| `tools/chat-assistant/backend/requirements-ocr.txt` | 新增可选 OCR 依赖清单 |
+| `tools/chat-assistant/backend/.env.example` | 新增 OCR 配置示例 |
+| `tools/chat-assistant/backend/.env` | 新增本地 OCR 配置，默认关闭 |
+| `blog-admin/src/views/KnowledgeBase.vue` | 新增 OCR 任务状态展示 |
+| `README.md` | 补充 OCR 架构、启用方式和可调参数 |
+
+### 验证
+
+- `python -m compileall -q tools/chat-assistant/backend/app`：通过。
+- `npm run build`（`blog-admin`）：通过。
+- OCR 关闭时解析扫描 PDF：保持原行为，可提取 8 个文字块，不影响已有导入链路。
+- 手动打开 `OCR_ENABLED=true` 且未安装 OCR 依赖时，错误信息明确提示安装 `pip install -r requirements-ocr.txt`。
+
+### 说明
+
+- 当前实现是“简化版方案 C”：本地 PaddleOCR 为主，云 OCR 只做配置预留。
+- 真正上线时建议把 OCR Worker 独立部署，限制并发为 1-2，并增加文件 hash 缓存和页级断点续跑，避免重复 OCR 和资源被大文件占满。
+- 本地安装实测：
+  - Anaconda Python 3.13 安装 OCR 依赖长时间卡住，不适合 PaddleOCR。
+  - 使用 `C:\Python310\python.exe` 创建 `tools/chat-assistant/backend/.venv-ocr` 成功。
+  - PaddleOCR 3.7.0 + PaddlePaddle 3.3.1 在 Windows CPU 下触发 oneDNN/PIR 推理错误。
+  - 已将 `requirements-ocr.txt` 固定为 PaddleOCR 2.x / PaddlePaddle 2.x / `numpy<2.0`，实测单页 OCR 可用。
+  - `算法导论 原书第3版_13234228.pdf` 第 1 页可通过 OCR 识别出封面文字，第 2 页可识别出约 973 字简介文本。
+- `start.bat` 已改为优先使用 `.venv-ocr` 启动 chat-assistant，且本地 `.env` 已打开 `OCR_ENABLED=true`。
+
+---
+
+## 知识库导入失败：Docker/WSL 异常导致 ES 索引不可用
+
+**日期**：2026-07-26
+
+### 问题
+
+- 上传大文件后，消息中心返回：`ES 知识库索引不可用或向量维度不匹配，请检查 kb_chunks mapping 和 EMBEDDING_DIM`。
+- Docker Desktop 同时提示 WSL 异常，`docker ps` 无法连接 Linux engine，`wsl -l -v` 显示 `Ubuntu` 和 `docker-desktop` 均处于 `Stopped`。
+- 由于 Elasticsearch 容器没有正常运行，Python `chat-assistant` 在导入前执行 `ensure_kb_index()` 失败，最终把底层 ES 不可用包装成知识库索引不可用/维度不匹配错误。
+- 本次失败文档为 `算法导论 原书第3版_13234228.pdf`，`kb_document.id=7`，失败任务为 `kb_ingest_job.id=25`。
+
+### 排查
+
+- 重启 Docker Desktop 后确认：
+  - `wsl -l -v`：`Ubuntu`、`docker-desktop` 均为 `Running`。
+  - `docker ps`：`blog-es` 为 `healthy`，端口 `9200/9300` 已监听。
+  - `GET http://localhost:9200/_cluster/health`：`status=green`。
+- 检查 ES `kb_chunks` mapping：
+  - `embedding` 字段类型为 `dense_vector`。
+  - `dims=2560`。
+- 检查 Python `.env`：
+  - `EMBEDDING_MODEL=Qwen/Qwen3-Embedding-4B`。
+  - `EMBEDDING_DIM=2560`。
+- 结论：当前不是向量维度不匹配，而是 Docker/WSL 异常导致 ES 在导入时不可用。
+
+### 修复
+
+- 启动 Docker Desktop，等待 WSL 和 `blog-es` 恢复。
+- 通过后台登录态调用 `POST /api/admin/kb/documents/7/reparse`，重新触发文档解析、切片、Embedding 和 ES 写入。
+- 新任务 `kb_ingest_job.id=26` 执行完成，文档 `kb_document.id=7` 状态从 `FAILED` 恢复为 `READY`。
+
+### 验证
+
+- `kb_ingest_job.id=26`：`REPARSE / DONE / progress=100`。
+- `kb_document.id=7`：`status=READY`，`chunk_count=8`，错误信息已清空。
+- `kb_document_chunk`：文档 `7` 的 8 个 chunk 均为 `embedding_status=DONE`、`index_status=DONE`。
+- ES `kb_chunks`：文档 `7` 查询数量为 8 条。
+- `POST http://localhost:8088/api/kb/qa/test`：返回 `retrievalType=VECTOR`，可召回文档 `7` 的知识库 chunk。
+
+### 说明
+
+- 281MB PDF 最终只解析出 8 个 chunk，说明该文件可抽取文本较少或主体可能是扫描/图片页；当前 `pypdf` 只能索引可提取文本，若要覆盖扫描页，需要后续接入 OCR 流程。
+- 以后遇到同类错误，应先检查 Docker/WSL/ES 健康状态，再判断是否需要重建 ES 索引，避免误删已有 `kb_chunks` 数据。
+
+---
+
+## 知识库大文件导入后看不到索引/Embedding 进度
+
+**日期**：2026-07-26
+
+### 问题
+
+- 管理端上传大文件后，页面只显示上传进度，上传完成后看不到解析、切片、Embedding、索引阶段的任务进度。
+- 用户会误以为“没有开始索引和 embedding”。
+- 数据库排查发现，文档列表只返回 `kb_document.status`，而真正的任务进度写在 `kb_ingest_job.progress/message/status` 中，前端没有展示。
+- 本地闭环测试还发现当前 8080 运行实例对分片接口返回 500，而使用当前源码临时启动的新实例分片上传可成功创建 `kb_document` 和 `kb_ingest_job`，说明运行实例需要重启到最新代码。
+- 临时导入测试任务最终失败在 ES/Embedding 配置：`ES 知识库索引不可用或向量维度不匹配，请检查 kb_chunks mapping 和 EMBEDDING_DIM`，这类失败之前只能在消息中心看到，不会出现在文档列表进度列。
+
+### 修复
+
+- `KbDocument` 增加非表字段：
+  - `latestJobId`
+  - `latestJobStatus`
+  - `latestJobProgress`
+  - `latestJobMessage`
+  - `latestJobErrorMessage`
+- `KnowledgeBaseServiceImpl.listDocuments()` 查询文档列表后，批量补齐每个文档最近一条 `kb_ingest_job`。
+- 管理端 `/knowledge` 文档表新增“任务进度”列，展示最近任务状态、百分比、当前消息或失败原因。
+- 管理端在存在活跃任务时每 5 秒自动刷新文档列表，活跃状态包括 `PENDING/RUNNING/PARSING/CHUNKING/EMBEDDING/INDEXING`。
+- 管理端分片上传增加 `catch`，上传/合并失败时弹出后端返回的明确错误，不再只默默结束 loading。
+
+### 修改文件
+
+| 文件 | 变更 |
+|------|------|
+| `blog-server/src/main/java/com/blog/entity/KbDocument.java` | 增加最新任务进度非表字段 |
+| `blog-server/src/main/java/com/blog/service/impl/KnowledgeBaseServiceImpl.java` | 文档列表批量补齐最近导入任务 |
+| `blog-admin/src/views/KnowledgeBase.vue` | 增加任务进度列、轮询刷新和上传失败提示 |
+
+### 验证
+
+- 使用临时 Spring Boot 18080 实例走分片上传闭环：`upload/chunk` 返回 200，`upload/complete` 返回 200，并创建 `kb_document` 与 `kb_ingest_job`。
+- 数据库确认任务能从 `RUNNING` 推进到 Python 处理阶段；测试任务因 ES/Embedding 维度问题转为 `FAILED`，失败原因可用于前端展示。
+- `blog-server .\mvnw.cmd -q -DskipTests compile`：通过。
+- `blog-admin npm run build`：通过。
+- `python -m compileall -q tools/chat-assistant/backend/app`：通过。
+
+### 说明
+
+- 修复后需要重启当前 8080 后端服务和管理端 Vite 服务，否则浏览器仍会访问旧实例。
+- 如果上传后任务进度显示 ES/Embedding 维度错误，需要检查 `EMBEDDING_DIM` 与 ES `kb_chunks` 索引 mapping 是否一致，并在必要时重建索引。
+
+---
+
+## 知识库大文件导入升级：分片上传、流式解析、批量 Embedding
+
+**日期**：2026-07-26
+
+### 问题
+
+- 300MB 上限只解决了“能接收”的问题，完整文件仍可能挤在一次 HTTP 请求中，网络波动时重试成本高。
+- Python `chat-assistant` 原导入流程是 `parse list -> chunk list -> replace_chunks -> 逐条 embedding`，大文件会占用更多内存和 API 调用时间。
+- 重建索引时也会一次性读取全部 chunk，不适合更大的知识库文档。
+
+### 修复
+
+- 新增 Java 分片上传接口：
+  - `POST /api/admin/kb/documents/upload/chunk`
+  - `POST /api/admin/kb/documents/upload/complete`
+- 管理端知识库上传改为 8MB 分片上传，上传过程中显示进度，完成后由 Java 合并分片并创建异步导入任务。
+- Java 后端将分片暂存到 `upload/knowledge/.chunks/{uploadId}`，合并成功后清理临时分片目录。
+- 保留原 `/api/admin/kb/documents/upload` 普通上传接口，避免旧调用失效。
+- Python `DocumentParser` 增加 `iter_parse()`，MD/TXT 改为逐行/逐段读取，PDF 按页产出文本块。
+- Python `HybridChunker` 增加 `iter_chunks()`，导入时不再先把所有 chunk 堆成列表。
+- Python `KbStore` 增加分批写入、chunk 计数和批量迭代读取能力。
+- Python `KbService` 导入流程改为“流式解析 -> 分批写 MySQL -> 分批读取 chunk -> `embed_batch()` -> 写 ES”。
+- 重建索引改为按批次读取 chunk，并通过 `count_chunks()` 统计数量，避免一次性加载全部 chunk。
+- 修复 `llm_service.py` 中 RAG system prompt 的中文弯引号三引号，避免 Python 服务语法编译失败。
+- 新增可调环境变量：
+  - `KB_CHUNK_INSERT_BATCH_SIZE`：默认 `200`
+  - `KB_EMBEDDING_BATCH_SIZE`：默认 `16`
+
+### 修改文件
+
+| 文件 | 变更 |
+|------|------|
+| `blog-server/src/main/java/com/blog/controller/admin/KnowledgeBaseAdminController.java` | 新增分片上传与合并接口 |
+| `blog-server/src/main/java/com/blog/service/KnowledgeBaseService.java` | 增加分片上传服务方法 |
+| `blog-server/src/main/java/com/blog/service/impl/KnowledgeBaseServiceImpl.java` | 实现分片暂存、合并、校验和清理 |
+| `blog-admin/src/api/index.js` | 新增分片上传和合并 API 调用 |
+| `blog-admin/src/views/KnowledgeBase.vue` | 上传流程改为 8MB 分片并显示进度 |
+| `tools/chat-assistant/backend/app/config.py` | 新增 chunk 写库批次和 embedding 批次配置 |
+| `tools/chat-assistant/backend/app/services/document_parser.py` | 增加流式解析与流式切片接口 |
+| `tools/chat-assistant/backend/app/services/kb_store.py` | 增加分批写入、计数和迭代读取 |
+| `tools/chat-assistant/backend/app/services/kb_service.py` | 导入和重建索引改为流式/批处理流程 |
+| `tools/chat-assistant/backend/app/services/llm_service.py` | 修复 prompt 字符串三引号语法 |
+| `README.md` | 更新 RAG 大文件导入能力说明 |
+
+### 说明
+
+- 当前版本已把 300MB 导入从“单请求上传 + 一次性解析/逐条 embedding”升级为“分片上传 + 分批处理”。
+- PDF 解析仍依赖 `pypdf`，按页提取可以降低业务层堆积，但超大/扫描版 PDF 的实际耗时仍取决于 PDF 内容结构。
+- 下一步如果继续工业化，重点应是断点续传、失败分片重试、任务队列限流、批量 ES bulk 写入和更细的任务进度。
+
+---
+
+## 知识库单文件上传上限提升到 300MB
+
+**日期**：2026-07-26
+
+### 问题
+
+- 原 Spring Boot multipart 配置仍是 `10MB`，管理端上传较大知识库文档会在进入异步导入前被拦截。
+- 管理端知识库上传区没有明确文件大小提示，也没有前端选择阶段的大小校验。
+- 管理端 Axios 默认 `10s` 超时，对 300MB 文件上传不够稳。
+
+### 修复
+
+- 将公共 multipart 配置改为环境变量可覆盖：`KB_MAX_FILE_SIZE` 默认 `300MB`，`KB_MAX_REQUEST_SIZE` 默认 `320MB`。
+- 在 `KnowledgeBaseServiceImpl.uploadDocument` 增加空文件与 300MB 服务端兜底校验，避免只依赖前端限制。
+- 管理端知识库上传接口单独设置 10 分钟超时，避免影响普通 API。
+- 管理端 `/knowledge` 上传区增加 300MB 上限提示，并在选择文件时阻止超过 300MB 的 Markdown/TXT/PDF。
+- README 补充知识库大文件导入说明，并注明第一版仍不是完整的分片上传/流式解析方案。
+
+### 修改文件
+
+| 文件 | 变更 |
+|------|------|
+| `blog-server/src/main/resources/application.yml` | multipart 默认上限提升为 300MB/320MB，并支持环境变量覆盖 |
+| `blog-server/src/main/java/com/blog/service/impl/KnowledgeBaseServiceImpl.java` | 增加知识库上传空文件和 300MB 兜底校验 |
+| `blog-admin/src/api/index.js` | 知识库文档上传接口增加 10 分钟超时 |
+| `blog-admin/src/views/KnowledgeBase.vue` | 增加上传提示与前端文件大小校验 |
+| `README.md` | 补充 RAG 知识库 300MB 导入能力和后续工业化方向 |
+
+### 说明
+
+- 该版本可以接收并创建 300MB 以内文件的知识库异步导入任务。
+- Python `chat-assistant` 当前仍会在解析阶段读取文本/PDF 内容并生成切片，大文件解析、embedding 和 ES 索引耗时会明显增加。
+- 若后续要支持更高并发或超过 300MB 的资料集，建议继续实现分片上传、断点续传、流式解析、批量 embedding、任务队列限流与更细的进度展示。
+
+---
+
+## 用户端与管理端视觉风格重构：索引角标 Logo + 蓝色纸张主题
+
+**日期**：2026-07-25
+
+### 调整
+
+- 保留原有首页、AI 问答区、文章流、侧栏和管理端导航布局，仅调整视觉设计。
+- 用户端和管理端统一使用方案 2 的索引角标 Logo，移除原有字母 `B` 标识。
+- 配色改为浅色纸张背景、深墨色文字和低饱和蓝色主色，去除紫色渐变和装饰性网格背景。
+- 用户端 AI 输入框、文章卡片和侧栏采用方案 1 的克制工作台风格，减少圆角、阴影和玻璃拟态。
+- AI 聊天入口移除机器人和气泡 emoji，改用线性图标，避免模板化 AI 视觉。
+- 管理端登录页、侧栏、顶部栏和 Element Plus 基础控件同步蓝色主题。
+
+### 修改文件
+
+| 文件 | 变更 |
+|------|------|
+| `blog-front/src/App.vue` | 更新用户端主题变量、Naive UI 蓝色主题和暗色模式 |
+| `blog-front/src/components/AppHeader.vue` | 替换索引角标 Logo，调整导航和搜索框风格 |
+| `blog-front/src/components/ChatWindow.vue` | 移除 emoji，改为线性图标和克制蓝色聊天样式 |
+| `blog-front/src/views/HomeView.vue` | 调整首页纸张表面、字体和文章区视觉 |
+| `blog-front/src/views/HomeAiView.vue` | 调整 AI 问答区、输入框和来源标签视觉 |
+| `blog-admin/src/components/AdminLayout.vue` | 同步 Logo、侧栏、顶部栏和管理端蓝色主题 |
+| `blog-admin/src/style.css` | 更新 Element Plus 全局颜色、边框和阴影 |
+| `blog-admin/src/views/LoginView.vue` | 更新登录页 Logo、卡片和按钮样式 |
+
+### 验证
+
+- 保持现有路由、API、数据库和页面布局不变。
+- `blog-front npm run build`：通过。
+- `blog-admin npm run build`：通过。
+- `git diff --check`：通过。
+
+---
+
 ## 强化 Java 前后端与 Agent 知识工作台工程能力
 
 **日期**：2026-07-25

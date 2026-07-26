@@ -37,6 +37,7 @@ class KbIngestRequest(BaseModel):
     title: str
     filePath: str
     fileType: str
+    parseMode: str = "OCR"
 
 
 class KbReindexRequest(BaseModel):

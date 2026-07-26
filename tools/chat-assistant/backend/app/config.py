@@ -11,6 +11,10 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
 
 
+def _bool_env(name: str, default: str = "false") -> bool:
+    return os.getenv(name, default).strip().lower() in {"1", "true", "yes", "on"}
+
+
 class Settings:
     # ====== LLM 对话模型 ======
     llm_api_key: str = os.getenv("LLM_API_KEY", "")
@@ -40,6 +44,22 @@ class Settings:
     chat_temperature: float = float(os.getenv("CHAT_TEMPERATURE", "0.7"))
     retrieval_top_k: int = int(os.getenv("RETRIEVAL_TOP_K", "5"))
     internal_token: str = os.getenv("CHAT_ASSISTANT_TOKEN", "")
+    kb_chunk_insert_batch_size: int = int(os.getenv("KB_CHUNK_INSERT_BATCH_SIZE", "200"))
+    kb_embedding_batch_size: int = int(os.getenv("KB_EMBEDDING_BATCH_SIZE", "16"))
+
+    # ====== OCR（扫描版 PDF，可选） ======
+    pdf_parse_provider: str = os.getenv("PDF_PARSE_PROVIDER", "auto").strip().lower()
+    ocr_enabled: bool = _bool_env("OCR_ENABLED", "false")
+    ocr_provider: str = os.getenv("OCR_PROVIDER", "paddle").strip().lower()
+    ocr_lang: str = os.getenv("OCR_LANG", "ch")
+    ocr_render_dpi: int = int(os.getenv("OCR_RENDER_DPI", "180"))
+    ocr_min_text_chars: int = int(os.getenv("OCR_MIN_TEXT_CHARS", "30"))
+    ocr_max_pages: int = int(os.getenv("OCR_MAX_PAGES", "0"))
+    cloud_ocr_base_url: str = os.getenv("CLOUD_OCR_BASE_URL", "")
+    cloud_ocr_api_key: str = os.getenv("CLOUD_OCR_API_KEY", "")
+    mineru_enabled: bool = _bool_env("MINERU_ENABLED", "false")
+    mineru_command: str = os.getenv("MINERU_COMMAND", "magic-pdf -p {input} -o {output}")
+    mineru_output_dir: str = os.getenv("MINERU_OUTPUT_DIR", ".mineru-output")
 
     def validate(self) -> list[str]:
         """启动时校验必要配置，返回错误列表（空列表 = 全部 OK）。"""

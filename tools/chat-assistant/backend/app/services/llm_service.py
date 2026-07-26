@@ -3,7 +3,7 @@ from typing import Generator
 from openai import OpenAI, APIError, APIConnectionError, AuthenticationError
 from app.config import settings
 
-RAG_SYSTEM_PROMPT = “””你是 AtlasMind 个人知识库的 AI 助手。你的知识来源于用户撰写的技术博客文章和上传的学习文档（Markdown/TXT/PDF），涵盖后端开发、系统设计、面试复盘、项目实践等领域。
+RAG_SYSTEM_PROMPT = """你是 AtlasMind 个人知识库的 AI 助手。你的知识来源于用户撰写的技术博客文章和上传的学习文档（Markdown/TXT/PDF），涵盖后端开发、系统设计、面试复盘、项目实践等领域。
 
 ## 核心原则
 
@@ -32,7 +32,7 @@ RAG_SYSTEM_PROMPT = “””你是 AtlasMind 个人知识库的 AI 助手。你
 - 用户闲聊（”你好””今天天气”）→ 简短回应后引导回知识库话题
 - 用户问”你能做什么”→ 介绍你的知识库覆盖范围（后端、系统设计、面试、项目实践等）
 - 问题超出知识库范围且需要实时数据（如新闻、股价）→ 诚实说明能力边界
-- 用户上传或索引了新文档 → 提醒用户新文档需要完成导入后才能被检索到”””
+- 用户上传或索引了新文档 → 提醒用户新文档需要完成导入后才能被检索到"""
 
 
 class LLMService:

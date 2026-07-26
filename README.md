@@ -436,7 +436,10 @@ Blog2026 已从“基于博客文章的 AI 问答”升级为“个人学习 / �
 | 检索索引 | `blog_articles` + `kb_chunks` | 文章索引和知识库文档索引分开维护，RAG 时统一召回合并 |
 | 事实源 | MySQL 存元数据和 chunk，ES 存检索索引 | MySQL 保留可恢复事实源，ES 专注检索性能 |
 | 文档类型 | Markdown / TXT / PDF | 覆盖个人笔记、项目文档、面试资料的第一版核心格式 |
+| 单文件上限 | 300MB | Java 接收后落盘，Python 异步解析和索引，适合较大的学习资料或项目文档 |
+| 上传策略 | 管理端分片上传 + Java 合并 | 避免 300MB 文件挤在一次 HTTP 请求中，提高大文件上传稳定性 |
 | 切片策略 | 标题/段落优先 + 固定长度兜底 + overlap | 优先保留结构语义，长段落仍能稳定进入索引 |
+| PDF 解析策略 | 快速 / OCR / MinerU 三档模式 | 按质量、耗时和资源成本分层，避免所有 PDF 都走重解析 |
 | 对话后端 | Python FastAPI 微服务 | 文档解析、embedding、ES 检索、RAG prompt 和 SSE streaming 都集中在 AI 服务 |
 | 流式输出 | SSE (Server-Sent Events) | FastAPI `StreamingResponse` + 前端 `ReadableStream`，零额外依赖 |
 | LLM | DeepSeek（OpenAI 兼容） | 与现有工具链共享 OpenAI SDK 调用模式 |
@@ -485,12 +488,16 @@ Java `blog-server` 负责后台管理、文件保存、任务和通知；Python 
 
 ```
 后台上传文档
-→ blog-server 保存原始文件
+→ 管理端按 8MB 分片上传
+→ blog-server 暂存分片并合并原始文件
 → 创建 kb_document 和 kb_ingest_job
-→ chat-assistant 异步解析 MD/TXT/PDF
+→ chat-assistant 按解析模式异步处理 MD/TXT/PDF
+→ 快速解析：pypdf 文字层
+→ 扫描 OCR：pypdf 优先，无文字页进入 PaddleOCR
+→ 高质量解析：MinerU provider（耗时更长，默认关闭）
 → 标题/段落优先切片，固定长度兜底并保留 overlap
-→ chunk 写入 MySQL
-→ 生成 embedding
+→ chunk 分批写入 MySQL
+→ 批量生成 embedding
 → 写入 ES kb_chunks
 → 文档状态更新为 READY
 → kb_notification 写入导入成功/失败通知
@@ -499,12 +506,88 @@ Java `blog-server` 负责后台管理、文件保存、任务和通知；Python 
 后台 `/knowledge` 页面支持：
 
 - 新建知识库空间
-- 上传 Markdown / TXT / PDF
+- 上传 Markdown / TXT / PDF，单文件上限 300MB
+- 上传时选择解析模式：快速解析、扫描 OCR、高质量解析（MinerU）
 - 一键导入 `Debug修复记录.md`
 - 查看文档状态、切片列表和索引状态
 - 重新解析、重新索引
 - 软删除、恢复、永久删除
 - 指定空间或文档做检索测试
+
+当前 300MB 支持采用“管理端分片上传 + Java 合并落盘 + Python 流式解析 + 批量 embedding + 消息中心通知”的方案：
+`spring.servlet.multipart.max-file-size` 默认提升到 `300MB`，`max-request-size` 默认 `320MB`，
+管理端会在选择文件时做同样的 300MB 校验，并按 8MB 分片上传到 Java 后端。
+Python `chat-assistant` 对 MD/TXT 使用逐段读取，对 PDF 按页提取文本，chunk 分批写入 MySQL，
+再按 `KB_EMBEDDING_BATCH_SIZE` 批量请求 embedding 并写入 ES。
+
+PDF 解析采用三档模式：
+
+| 模式 | 值 | 行为 | 适用场景 |
+|------|----|------|----------|
+| 快速解析 | `FAST` | 只读取 PDF 文字层，不做 OCR | 普通文字型 PDF、导入速度优先 |
+| 扫描 OCR | `OCR` | 文字层优先，无文字页调用 PaddleOCR | 扫描书籍、图片页 PDF |
+| 高质量解析 | `MINERU` | 调用 MinerU provider 输出 Markdown | 论文、教材、复杂版式、公式/表格较多的资料 |
+
+`.env` 中 `PDF_PARSE_PROVIDER=auto` 作为未传模式时的兜底；管理端上传会显式传入解析模式。
+当前默认上传模式为 `OCR`：普通文字页仍走 `pypdf`，只有扫描页才调用 PaddleOCR。
+OCR 为可选能力，主服务依赖不强制安装重型 OCR 包；
+需要识别扫描书籍时，在运行 OCR 的机器上安装：
+
+```bash
+cd tools/chat-assistant/backend
+python -m venv .venv-ocr
+.venv-ocr\Scripts\python.exe -m pip install -r requirements.txt -r requirements-ocr.txt
+```
+
+本地 Windows 环境已验证使用 Python 3.10 + PaddleOCR 2.x：
+
+```bash
+.venv-ocr\Scripts\python.exe run.py
+```
+
+如果只想给已有环境补装 OCR 依赖，也可以执行：
+
+```bash
+pip install -r requirements-ocr.txt
+```
+
+然后在 `.env` 中启用：
+
+```bash
+OCR_ENABLED=true
+OCR_PROVIDER=paddle
+OCR_LANG=ch
+OCR_RENDER_DPI=180
+OCR_MAX_PAGES=0
+```
+
+当前云 OCR 只预留 `CLOUD_OCR_BASE_URL` 和 `CLOUD_OCR_API_KEY` 配置位，尚未绑定具体厂商。
+MinerU 也只做 provider 边界和命令配置预留，默认 `MINERU_ENABLED=false`；启用前需要单独安装 MinerU，
+并按实际命令调整 `MINERU_COMMAND`。生产上线建议把 OCR/MinerU Worker 独立部署并限制并发，
+避免一本扫描书长时间占满主服务资源。
+`start.bat` 会优先使用 `tools/chat-assistant/backend/.venv-ocr/Scripts/python.exe` 启动
+chat-assistant；没有该 venv 时才回退到系统 `python`。
+
+可调参数：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `KB_MAX_FILE_SIZE` | `300MB` | Spring Boot 单文件接收上限 |
+| `KB_MAX_REQUEST_SIZE` | `320MB` | Spring Boot 单请求上限 |
+| `KB_CHUNK_INSERT_BATCH_SIZE` | `200` | Python 每批写入 MySQL 的 chunk 数 |
+| `KB_EMBEDDING_BATCH_SIZE` | `16` | Python 每批请求 embedding 的文本数 |
+| `PDF_PARSE_PROVIDER` | `auto` | 未显式传入解析模式时的 PDF provider |
+| `OCR_ENABLED` | `false` | 是否启用扫描版 PDF OCR |
+| `OCR_PROVIDER` | `paddle` | 本地 OCR provider；`cloud` 仅预留 |
+| `OCR_LANG` | `ch` | PaddleOCR 识别语言 |
+| `OCR_RENDER_DPI` | `180` | PDF 页面渲染为图片的 DPI |
+| `OCR_MIN_TEXT_CHARS` | `30` | 页面文字层少于该字符数时才触发 OCR |
+| `OCR_MAX_PAGES` | `0` | 单文档 OCR 页数上限，0 表示不限制 |
+| `MINERU_ENABLED` | `false` | 是否启用 MinerU 高质量解析 |
+| `MINERU_COMMAND` | `magic-pdf -p {input} -o {output}` | MinerU 命令模板 |
+| `MINERU_OUTPUT_DIR` | `.mineru-output` | MinerU 临时输出目录 |
+
+后续如果要继续提升到生产级大文件导入，可再增加断点续传、秒传校验、后台任务队列限流、失败分片重试和更细粒度的解析进度。
 
 ### 权限与可见性管理
 
@@ -523,6 +606,7 @@ tools/chat-assistant/
 └── backend/
     ├── run.py                 # 启动入口 (uvicorn, port 8088)
     ├── requirements.txt       # fastapi + openai + elasticsearch + pymysql + pypdf
+    ├── requirements-ocr.txt   # 可选 OCR 依赖：pymupdf + Pillow + paddleocr
     ├── .env.example           # LLM / Embedding / ES / MySQL 配置示例
     ├── scripts/
     │   └── index_articles.py  # 文章索引脚本
@@ -532,6 +616,8 @@ tools/chat-assistant/
         ├── api/routes.py      # Chat SSE + KB 内部导入/重索引/测试接口
         ├── services/
         │   ├── document_parser.py  # MD/TXT/PDF 解析 + 混合切片
+        │   ├── ocr_service.py       # 扫描版 PDF 本地 OCR provider
+        │   ├── mineru_service.py    # 高质量 PDF 解析 provider
         │   ├── embedding_service.py # OpenAI 兼容 embedding
         │   ├── es_service.py        # 文章/知识库向量检索 + 关键词 fallback
         │   ├── kb_store.py          # MySQL 任务、文档、chunk、通知写入

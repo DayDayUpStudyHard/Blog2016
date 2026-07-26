@@ -27,7 +27,7 @@ echo [6/7] Starting crypto toolbox (Vite :5176) ...
 start "Crypto-Toolbox" cmd /k "title Crypto-Toolbox && cd /d %~dp0tools\crypto-toolbox\frontend && npm install && npm run dev"
 
 echo [7/7] Starting chat assistant (FastAPI :8088) ...
-start "Chat-Assistant" cmd /k "title Chat-Assistant && cd /d %~dp0tools\chat-assistant\backend && pip install -r requirements.txt -q && python run.py"
+start "Chat-Assistant" cmd /k "title Chat-Assistant && cd /d %~dp0tools\chat-assistant\backend && if exist .venv-ocr\Scripts\python.exe (.venv-ocr\Scripts\python.exe run.py) else (pip install -r requirements.txt -q && python run.py)"
 
 echo.
 echo ==============================

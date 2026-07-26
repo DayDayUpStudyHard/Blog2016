@@ -75,25 +75,25 @@ async function selectCategory(id) {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); text-align: left;
 }
 .cat-btn:hover, .cat-btn.active {
-  border-color: #409EFF;
+  border-color: #426fa6;
   background: #ecf5ff;
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }
 .cat-btn.active {
-  border-color: #409EFF;
-  background: linear-gradient(135deg, #ecf5ff, #f0f9eb);
+  border-color: #426fa6;
+  background: #eaf0f7;
 }
 
 .cat-icon { color: #909399; transition: color 0.2s; flex-shrink: 0; }
-.cat-btn.active .cat-icon { color: #409EFF; }
+.cat-btn.active .cat-icon { color: #426fa6; }
 .cat-info { display: flex; flex-direction: column; gap: 2px; }
 .cat-name { font-size: 15px; color: #303133; font-weight: 500; }
 .cat-desc { font-size: 12px; color: #909399; }
 .cat-arrow {
   color: #c0c4cc; transition: all 0.2s; display: flex; margin-left: auto;
 }
-.cat-btn.active .cat-arrow { color: #409EFF; transform: translateX(2px); }
+.cat-btn.active .cat-arrow { color: #426fa6; transform: translateX(2px); }
 
 .result { margin-top: 4px; }
 .result-head { margin-bottom: 12px; }

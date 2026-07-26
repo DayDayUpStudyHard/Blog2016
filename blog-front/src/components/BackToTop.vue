@@ -69,13 +69,13 @@ onUnmounted(() => window.removeEventListener('scroll', onScroll))
   stroke: #e8ecf0;
 }
 .ring-progress {
-  stroke: #409EFF;
+  stroke: var(--blog-primary);
   stroke-linecap: round;
   transition: stroke-dashoffset 0.15s linear;
 }
 
 .arrow-icon {
-  position: relative; z-index: 1; color: #409EFF;
+  position: relative; z-index: 1; color: var(--blog-primary);
 }
 
 .fade-enter-active, .fade-leave-active { transition: all 0.3s ease; }

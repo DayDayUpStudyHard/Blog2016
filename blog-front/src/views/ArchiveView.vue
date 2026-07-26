@@ -66,8 +66,8 @@ function formatDay(d) {
   content: '';
   position: absolute; left: 7px; top: 0; bottom: 0;
   width: 2px;
-  background: linear-gradient(180deg, #409EFF, #8b5cf6, #ec4899);
-  border-radius: 1px;
+  background: #426fa6;
+  border-radius: 0;
   opacity: 0.3;
 }
 
@@ -78,8 +78,8 @@ function formatDay(d) {
   position: absolute; left: -24px; top: 8px;
   width: 12px; height: 12px; border-radius: 50%;
   background: #fff;
-  border: 2.5px solid #409EFF;
-  box-shadow: 0 0 0 3px rgba(64,158,255,0.12);
+  border: 2.5px solid #426fa6;
+  box-shadow: 0 0 0 3px rgba(66,111,166,0.12);
   z-index: 1;
 }
 

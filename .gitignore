@@ -27,6 +27,12 @@ Thumbs.db
 # Logs
 *.log
 
+# Python virtual environments
+.venv/
+.venv-*/
+venv/
+.mineru-output/
+
 # Upload
 blog-server/upload/
 

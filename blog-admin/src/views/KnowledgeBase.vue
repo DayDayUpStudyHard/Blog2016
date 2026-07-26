@@ -26,7 +26,7 @@
         :class="{ active: selectedSpaceId === space.id }"
         @click="selectSpace(space.id)"
       >
-        <span class="space-mark" :style="{ background: space.color || '#2563eb' }"></span>
+        <span class="space-mark" :style="{ background: space.color || '#426fa6' }"></span>
         <span>
           <strong>{{ space.name }}</strong>
           <em>{{ space.description || '暂无描述' }}</em>
@@ -58,6 +58,13 @@
           <el-form-item label="标题">
             <el-input v-model="uploadForm.title" placeholder="不填则使用文件名" />
           </el-form-item>
+          <el-form-item label="解析模式">
+            <el-segmented
+              v-model="uploadForm.parseMode"
+              :options="parseModeOptions"
+              class="parse-mode-control"
+            />
+          </el-form-item>
           <el-upload
             ref="uploadRef"
             drag
@@ -70,6 +77,13 @@
             <el-icon class="upload-icon"><UploadFilled /></el-icon>
             <div class="el-upload__text">拖入 Markdown、TXT 或 PDF，或点击选择</div>
           </el-upload>
+          <p class="upload-hint">单文件上限 300MB，大文件会异步解析，完成后在消息中心提醒。</p>
+          <el-progress
+            v-if="uploading"
+            class="upload-progress"
+            :percentage="uploadProgress"
+            :stroke-width="6"
+          />
           <el-button class="upload-button" type="primary" :disabled="!canUpload" :loading="uploading" @click="doUpload">
             开始导入
           </el-button>
@@ -130,6 +144,7 @@
           <el-select v-model="filterStatus" clearable placeholder="状态" size="small" @change="fetchDocuments">
             <el-option label="就绪" value="READY" />
             <el-option label="解析中" value="PARSING" />
+            <el-option label="OCR 中" value="OCR" />
             <el-option label="索引中" value="INDEXING" />
             <el-option label="失败" value="FAILED" />
             <el-option label="禁用" value="DISABLED" />
@@ -153,9 +168,30 @@
           <template #default="{ row }">{{ spaceName(row.spaceId) }}</template>
         </el-table-column>
         <el-table-column prop="fileType" label="类型" width="80" align="center" />
+        <el-table-column label="解析" width="110" align="center">
+          <template #default="{ row }">{{ parseModeLabel(row.parseMode) }}</template>
+        </el-table-column>
         <el-table-column label="状态" width="120" align="center">
           <template #default="{ row }">
             <span class="status-badge" :class="statusClass(row)">{{ statusLabel(row) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="任务进度" min-width="210">
+          <template #default="{ row }">
+            <div v-if="row.latestJobId" class="job-progress">
+              <div class="job-progress-head">
+                <span>{{ jobStatusLabel(row) }}</span>
+                <em>{{ row.latestJobProgress || 0 }}%</em>
+              </div>
+              <el-progress
+                :percentage="Number(row.latestJobProgress) || 0"
+                :status="jobProgressStatus(row)"
+                :stroke-width="6"
+                :show-text="false"
+              />
+              <p :class="{ danger: row.latestJobStatus === 'FAILED' }">{{ jobMessage(row) }}</p>
+            </div>
+            <span v-else class="muted">暂无任务</span>
           </template>
         </el-table-column>
         <el-table-column label="切片" width="90" align="center">
@@ -227,10 +263,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { InfoFilled, Plus, Refresh, Search, Upload, UploadFilled } from '@element-plus/icons-vue'
 import {
+  completeKbDocumentUpload,
   createKbSpace,
   deleteKbDocument,
   getRuntimeSettings,
@@ -243,7 +280,7 @@ import {
   reparseKbDocument,
   restoreKbDocument,
   testKbQa,
-  uploadKbDocument
+  uploadKbDocumentChunk
 } from '../api/index.js'
 
 const spaces = ref([])
@@ -258,28 +295,44 @@ const total = ref(0)
 const spaceLoading = ref(false)
 const documentLoading = ref(false)
 const uploading = ref(false)
+const uploadProgress = ref(0)
 const debugImporting = ref(false)
 const chunkLoading = ref(false)
 const qaLoading = ref(false)
 const uploadRef = ref(null)
 const selectedFile = ref(null)
+const documentPollTimer = ref(null)
 const chunkDialogVisible = ref(false)
 const chunkDialogTitle = ref('切片预览')
 const spaceDialogVisible = ref(false)
 const editingSpace = ref(null)
-const spaceForm = ref({ name: '', description: '', icon: 'book', color: '#2563eb', sort: 0, enabled: 1 })
-const uploadForm = ref({ spaceId: null, title: '' })
+const spaceForm = ref({ name: '', description: '', icon: 'book', color: '#426fa6', sort: 0, enabled: 1 })
+const uploadForm = ref({ spaceId: null, title: '', parseMode: 'OCR' })
+const parseModeOptions = [
+  { label: '快速', value: 'FAST' },
+  { label: 'OCR', value: 'OCR' },
+  { label: 'MinerU', value: 'MINERU' }
+]
 const qaForm = ref({ message: '', documentId: null, topK: 5 })
 const maxTopK = ref(10)
 const qaResult = ref(null)
+const MAX_UPLOAD_SIZE_MB = 300
+const MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+const KB_UPLOAD_CHUNK_SIZE = 8 * 1024 * 1024
 
 const canUpload = computed(() => uploadForm.value.spaceId && selectedFile.value)
 const qaHits = computed(() => qaResult.value?.hits || [])
+const hasActiveJobs = computed(() => documents.value.some(row => isActiveJob(row.latestJobStatus)))
 
 onMounted(async () => {
   await fetchSpaces()
   await fetchDocuments()
   await fetchRuntimeSettings()
+  startDocumentPolling()
+})
+
+onUnmounted(() => {
+  stopDocumentPolling()
 })
 
 async function fetchRuntimeSettings() {
@@ -323,6 +376,22 @@ async function fetchDocuments() {
   }
 }
 
+function startDocumentPolling() {
+  stopDocumentPolling()
+  documentPollTimer.value = window.setInterval(() => {
+    if (hasActiveJobs.value && !documentLoading.value) {
+      fetchDocuments()
+    }
+  }, 5000)
+}
+
+function stopDocumentPolling() {
+  if (documentPollTimer.value) {
+    window.clearInterval(documentPollTimer.value)
+    documentPollTimer.value = null
+  }
+}
+
 function selectSpace(spaceId) {
   selectedSpaceId.value = spaceId
   if (spaceId) uploadForm.value.spaceId = spaceId
@@ -334,7 +403,7 @@ function openSpaceDialog(space = null) {
   editingSpace.value = space
   spaceForm.value = space
     ? { ...space }
-    : { name: '', description: '', icon: 'book', color: '#2563eb', sort: 0, enabled: 1 }
+    : { name: '', description: '', icon: 'book', color: '#426fa6', sort: 0, enabled: 1 }
   spaceDialogVisible.value = true
 }
 
@@ -350,7 +419,18 @@ async function saveSpace() {
 }
 
 function onFileChange(file) {
-  selectedFile.value = file.raw
+  const rawFile = file.raw
+  if (!rawFile) {
+    selectedFile.value = null
+    return
+  }
+  if (rawFile.size > MAX_UPLOAD_SIZE_BYTES) {
+    selectedFile.value = null
+    uploadRef.value?.clearFiles()
+    ElMessage.warning(`单个知识库文件不能超过 ${MAX_UPLOAD_SIZE_MB}MB`)
+    return
+  }
+  selectedFile.value = rawFile
 }
 
 function onFileRemove() {
@@ -360,16 +440,53 @@ function onFileRemove() {
 async function doUpload() {
   if (!canUpload.value) return
   uploading.value = true
+  uploadProgress.value = 0
   try {
-    await uploadKbDocument(uploadForm.value.spaceId, selectedFile.value, uploadForm.value.title)
+    const file = selectedFile.value
+    const uploadId = createUploadId()
+    const totalChunks = Math.ceil(file.size / KB_UPLOAD_CHUNK_SIZE)
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * KB_UPLOAD_CHUNK_SIZE
+      const end = Math.min(start + KB_UPLOAD_CHUNK_SIZE, file.size)
+      await uploadKbDocumentChunk({
+        uploadId,
+        fileName: file.name,
+        fileSize: file.size,
+        chunkIndex,
+        totalChunks,
+        chunk: file.slice(start, end)
+      })
+      uploadProgress.value = Math.min(90, Math.round(((chunkIndex + 1) / totalChunks) * 90))
+    }
+    await completeKbDocumentUpload({
+      spaceId: uploadForm.value.spaceId,
+      uploadId,
+      fileName: file.name,
+      fileSize: file.size,
+      totalChunks,
+      title: uploadForm.value.title,
+      parseMode: uploadForm.value.parseMode
+    })
+    uploadProgress.value = 100
     ElMessage.success('导入任务已创建，完成后会在消息中心提醒')
     uploadForm.value.title = ''
+    uploadForm.value.parseMode = 'OCR'
     selectedFile.value = null
     uploadRef.value?.clearFiles()
     await fetchDocuments()
+  } catch (error) {
+    ElMessage.error(errorMessage(error, '上传失败，请检查文件或服务状态'))
   } finally {
     uploading.value = false
+    uploadProgress.value = 0
   }
+}
+
+function createUploadId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID().replaceAll('-', '')
+  }
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 12)}`
 }
 
 async function doImportDebugRecord() {
@@ -455,6 +572,10 @@ function statusLabel(row) {
   const labels = {
     UPLOADED: '已上传',
     PARSING: '解析中',
+    OCR: 'OCR 中',
+    MINERU: 'MinerU',
+    CHUNKING: '切片中',
+    EMBEDDING: '生成向量',
     INDEXING: '索引中',
     READY: '就绪',
     FAILED: '失败',
@@ -466,6 +587,51 @@ function statusLabel(row) {
 function statusClass(row) {
   if (row.deleted === 1) return 'deleted'
   return String(row.status || '').toLowerCase()
+}
+
+function jobStatusLabel(row) {
+  const labels = {
+    PENDING: '等待处理',
+    RUNNING: '已提交',
+    PARSING: '解析中',
+    OCR: 'OCR 识别',
+    MINERU: 'MinerU 解析',
+    CHUNKING: '切片中',
+    EMBEDDING: '生成向量',
+    INDEXING: '写入索引',
+    DONE: '已完成',
+    FAILED: '失败'
+  }
+  return labels[row.latestJobStatus] || row.latestJobStatus || '暂无任务'
+}
+
+function jobProgressStatus(row) {
+  if (row.latestJobStatus === 'FAILED') return 'exception'
+  if (row.latestJobStatus === 'DONE') return 'success'
+  return undefined
+}
+
+function jobMessage(row) {
+  return row.latestJobStatus === 'FAILED'
+    ? row.latestJobErrorMessage || row.errorMessage || row.latestJobMessage || '任务失败'
+    : row.latestJobMessage || '等待任务状态更新'
+}
+
+function isActiveJob(status) {
+  return ['PENDING', 'RUNNING', 'PARSING', 'OCR', 'MINERU', 'CHUNKING', 'EMBEDDING', 'INDEXING'].includes(status)
+}
+
+function parseModeLabel(mode) {
+  const labels = {
+    FAST: '快速',
+    OCR: 'OCR',
+    MINERU: 'MinerU'
+  }
+  return labels[String(mode || 'OCR').toUpperCase()] || mode || 'OCR'
+}
+
+function errorMessage(error, fallback) {
+  return error?.response?.data?.message || error?.message || fallback
 }
 
 function formatTime(value) {
@@ -503,7 +669,7 @@ function formatScore(value) {
 }
 
 .eyebrow {
-  color: #2563eb;
+  color: #426fa6;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -618,8 +784,56 @@ function formatScore(value) {
 }
 
 .upload-icon {
-  color: #2563eb;
+  color: #426fa6;
   font-size: 28px;
+}
+
+.upload-hint {
+  margin: 8px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.upload-progress {
+  margin-top: 12px;
+}
+
+.job-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.job-progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.job-progress-head em {
+  color: #6b7280;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.job-progress p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.job-progress p.danger {
+  color: #dc2626;
+}
+
+.muted {
+  color: #9ca3af;
+  font-size: 12px;
 }
 
 .upload-button {
@@ -673,7 +887,7 @@ function formatScore(value) {
 }
 
 .result-meta span {
-  color: #1d4ed8;
+  color: #315987;
   background: #eff6ff;
   border-radius: 999px;
   font-size: 12px;
@@ -767,7 +981,7 @@ function formatScore(value) {
 }
 
 .action-btn.preview { color: #047857; border-color: #d1fae5; }
-.action-btn.edit { color: #1d4ed8; border-color: #dbeafe; }
+.action-btn.edit { color: #315987; border-color: #dbeafe; }
 .action-btn.restore { color: #7c3aed; border-color: #ede9fe; }
 .action-btn.delete { color: #b45309; border-color: #fde68a; }
 .action-btn.danger { color: #dc2626; border-color: #fee2e2; }

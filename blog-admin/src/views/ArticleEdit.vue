@@ -152,7 +152,7 @@ async function onUploadImg(files, callback) {
 .page-title { font-size: 18px; color: #303133; font-weight: 600; margin: 0; }
 .mode-badge {
   font-size: 11px; color: #10b981; padding: 2px 10px; border-radius: 12px;
-  background: linear-gradient(135deg, #ecfdf5, #d1fae5); font-weight: 500;
+  background: #eef7f2; font-weight: 500;
 }
 
 .form-card {

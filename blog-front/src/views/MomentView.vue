@@ -68,7 +68,7 @@ async function fetchData() {
   transition: all 0.3s;
 }
 .moment-card:hover {
-  border-color: #409EFF;
+  border-color: #426fa6;
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }

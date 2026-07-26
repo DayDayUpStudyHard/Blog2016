@@ -50,62 +50,62 @@ function toggleTheme() {
 
 const themeOverrides = {
   common: {
-    primaryColor: '#2563eb',
-    primaryColorHover: '#1d4ed8',
-    primaryColorPressed: '#1e40af',
-    primaryColorSuppl: '#2563eb',
-    bodyColor: '#f7f8fb',
-    cardColor: '#ffffff',
-    modalColor: '#ffffff',
-    popoverColor: '#ffffff',
-    borderColor: '#e5e7eb',
-    hoverColor: 'rgba(37,99,235,0.06)',
+    primaryColor: '#426fa6',
+    primaryColorHover: '#315987',
+    primaryColorPressed: '#28496f',
+    primaryColorSuppl: '#426fa6',
+    bodyColor: '#f3f6fa',
+    cardColor: '#fbfcfe',
+    modalColor: '#fbfcfe',
+    popoverColor: '#fbfcfe',
+    borderColor: '#d4dde8',
+    hoverColor: 'rgba(66,111,166,0.06)',
     fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
     fontFamilyMono: "'JetBrains Mono', 'Fira Code', monospace",
-    textColorBase: '#111827',
-    textColor1: '#111827',
-    textColor2: '#64748b',
-    textColor3: '#94a3b8',
-    inputColor: '#ffffff',
-    inputColorFocus: '#ffffff',
-    tagColor: 'rgba(37,99,235,0.08)',
+    textColorBase: '#1f2d3d',
+    textColor1: '#1f2d3d',
+    textColor2: '#607184',
+    textColor3: '#8b9aaa',
+    inputColor: '#fbfcfe',
+    inputColorFocus: '#fbfcfe',
+    tagColor: 'rgba(66,111,166,0.08)',
     successColor: '#67c23a',
     successColorHover: '#85ce61',
     warningColor: '#e6a23c',
     errorColor: '#f56c6c',
   },
   Button: {
-    textColor: '#2563eb',
-    border: '1px solid #2563eb',
-    borderHover: '1px solid #1d4ed8',
-    borderFocus: '1px solid #2563eb',
-    borderPressed: '1px solid #1e40af',
-    colorHover: 'rgba(37,99,235,0.06)',
-    colorFocus: 'rgba(37,99,235,0.1)',
-    colorPressed: 'rgba(37,99,235,0.14)',
+    textColor: '#426fa6',
+    border: '1px solid #426fa6',
+    borderHover: '1px solid #315987',
+    borderFocus: '1px solid #426fa6',
+    borderPressed: '1px solid #28496f',
+    colorHover: 'rgba(66,111,166,0.06)',
+    colorFocus: 'rgba(66,111,166,0.1)',
+    colorPressed: 'rgba(66,111,166,0.14)',
   },
   Input: {
     border: '1px solid #dcdfe6',
     borderHover: '1px solid #c0c4cc',
-    borderFocus: '1px solid #2563eb',
-    boxShadowFocus: '0 0 0 3px rgba(37,99,235,0.12)',
+    borderFocus: '1px solid #426fa6',
+    boxShadowFocus: '0 0 0 3px rgba(66,111,166,0.12)',
     placeholderColor: '#c0c4cc',
   },
   Tag: {
-    textColor: '#2563eb',
+    textColor: '#426fa6',
     colorBordered: 'transparent',
-    border: '1px solid rgba(37,99,235,0.3)',
+    border: '1px solid rgba(66,111,166,0.3)',
   },
   Pagination: {
     itemColor: '#ffffff',
-    itemColorActive: '#2563eb',
+    itemColorActive: '#426fa6',
     itemTextColor: '#606266',
     itemTextColorActive: '#ffffff',
     itemBorder: '1px solid #e4e7ed',
-    itemBorderActive: '1px solid #2563eb',
+    itemBorderActive: '1px solid #426fa6',
   },
-  LoadingBar: { colorLoading: '#2563eb' },
-  Spin: { color: '#2563eb' },
+  LoadingBar: { colorLoading: '#426fa6' },
+  Spin: { color: '#426fa6' },
 }
 </script>
 
@@ -114,32 +114,31 @@ const themeOverrides = {
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --blog-bg: #f7f8fb;
-  --blog-surface: #ffffff;
-  --blog-surface-soft: #f1f5f9;
-  --blog-border: #e5e7eb;
-  --blog-border-strong: #d1d5db;
-  --blog-text: #111827;
-  --blog-muted: #64748b;
-  --blog-subtle: #94a3b8;
-  --blog-primary: #2563eb;
-  --blog-primary-dark: #1d4ed8;
-  --blog-accent: #0f766e;
-  --blog-warning: #b45309;
-  --blog-radius: 8px;
-  --blog-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 12px 30px rgba(15, 23, 42, 0.06);
+  /* Hallmark | macrostructure: Workbench | tone: editorial knowledge desk | anchor hue: ink blue */
+  --blog-bg: #f3f6fa;
+  --blog-surface: #fbfcfe;
+  --blog-surface-soft: #eaf0f7;
+  --blog-border: #d4dde8;
+  --blog-border-strong: #bdcad8;
+  --blog-text: #1f2d3d;
+  --blog-muted: #607184;
+  --blog-subtle: #8b9aaa;
+  --blog-primary: #426fa6;
+  --blog-primary-dark: #315987;
+  --blog-accent: #5e7895;
+  --blog-warning: #a7793d;
+  --blog-radius: 4px;
+  --blog-shadow: 0 1px 2px rgba(31, 45, 61, 0.04), 0 8px 22px rgba(31, 45, 61, 0.05);
+  --blog-font-display: Georgia, 'Times New Roman', serif;
+  --blog-font-body: Inter, system-ui, -apple-system, sans-serif;
 }
 
 body {
-  background:
-    linear-gradient(#eef2f7 1px, transparent 1px),
-    linear-gradient(90deg, #eef2f7 1px, transparent 1px),
-    var(--blog-bg);
-  background-size: 42px 42px;
+  background: var(--blog-bg);
   color: var(--blog-text);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--blog-font-body);
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 ::selection { background: rgba(37,99,235,0.18); color: var(--blog-text); }
@@ -193,7 +192,7 @@ body {
 .markdown-body a:hover { color: var(--blog-primary-dark); }
 .markdown-body strong { color: #0f172a; font-weight: 600; }
 .markdown-body code {
-  background: #eef2ff; color: #1d4ed8; padding: 3px 8px; border-radius: 4px;
+  background: #eef2ff; color: #315987; padding: 3px 8px; border-radius: 4px;
   font-family: 'JetBrains Mono', monospace; font-size: 0.88em; border: 1px solid #dbeafe;
 }
 .markdown-body pre {
@@ -236,19 +235,18 @@ body {
 
 /* ═══ Dark Mode ═══ */
 [data-theme="dark"] body {
-  --blog-bg: #0b1120;
-  --blog-surface: #111827;
-  --blog-surface-soft: #172033;
-  --blog-border: rgba(255,255,255,0.08);
-  --blog-border-strong: rgba(255,255,255,0.14);
-  --blog-text: #e5e7eb;
-  --blog-muted: #94a3b8;
-  --blog-subtle: #64748b;
-  background:
-    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
-    var(--blog-bg);
-  background-size: 42px 42px;
+  --blog-bg: #152235;
+  --blog-surface: #1d2d42;
+  --blog-surface-soft: #243953;
+  --blog-border: rgba(218, 229, 241, 0.14);
+  --blog-border-strong: rgba(218, 229, 241, 0.24);
+  --blog-text: #e7eef7;
+  --blog-muted: #a9b9ca;
+  --blog-subtle: #7f93aa;
+  --blog-primary: #8fb1d8;
+  --blog-primary-dark: #b0c9e5;
+  --blog-accent: #9eb7d2;
+  background: var(--blog-bg);
 }
 
 [data-theme="dark"] .glass-card {
@@ -272,9 +270,9 @@ body {
 }
 [data-theme="dark"] .title { color: #e2e8f0 !important; }
 [data-theme="dark"] .card-inner.hover .title {
-  background: linear-gradient(135deg, #60a5fa, #34d399);
-  -webkit-background-clip: text;
-  background-clip: text;
+  background: none;
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: currentColor;
 }
 [data-theme="dark"] .summary { color: #94a3b8 !important; }
 [data-theme="dark"] .meta { color: #64748b !important; }
@@ -291,7 +289,7 @@ body {
 [data-theme="dark"] .featured-title { color: #e2e8f0 !important; }
 [data-theme="dark"] .featured-summary { color: #94a3b8 !important; }
 [data-theme="dark"] .featured-cover.placeholder {
-  background: linear-gradient(135deg, #1e293b, #1a1a2e, #1e293b) !important;
+  background: var(--blog-surface-soft) !important;
 }
 
 /* Article detail */
@@ -351,7 +349,7 @@ body {
   border-color: rgba(255,255,255,0.08) !important;
 }
 [data-theme="dark"] .n-pagination .n-pagination-item--active {
-  background: #409EFF !important; color: #fff !important;
+  background: #426fa6 !important; color: #fff !important;
 }
 
 /* Empty state */
@@ -372,5 +370,29 @@ body {
     left: 16px;
     bottom: 18px;
   }
+}
+
+/* Hallmark | light-theme overrides: paper surfaces, ink-blue accents, no decorative gradients */
+body,
+[data-theme="dark"] body {
+  background-image: none !important;
+}
+
+.glass-card {
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.theme-toggle {
+  border-radius: 4px;
+  background: var(--blog-surface);
+  border-color: var(--blog-border);
+  box-shadow: none;
+}
+
+.theme-toggle:hover {
+  color: var(--blog-primary);
+  border-color: var(--blog-primary);
+  box-shadow: none;
 }
 </style>

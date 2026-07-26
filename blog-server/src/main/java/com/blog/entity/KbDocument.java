@@ -20,6 +20,7 @@ public class KbDocument {
     private Long fileSize;
     private String filePath;
     private String status;
+    private String parseMode;
     private Integer chunkCount;
     private String embeddingModel;
     private Integer embeddingDim;
@@ -31,4 +32,15 @@ public class KbDocument {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
     private Integer deleted;
+
+    @TableField(exist = false)
+    private Long latestJobId;
+    @TableField(exist = false)
+    private String latestJobStatus;
+    @TableField(exist = false)
+    private Integer latestJobProgress;
+    @TableField(exist = false)
+    private String latestJobMessage;
+    @TableField(exist = false)
+    private String latestJobErrorMessage;
 }

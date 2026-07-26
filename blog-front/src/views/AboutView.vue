@@ -81,13 +81,13 @@ onMounted(async () => {
 .timeline { position: relative; padding-left: 28px; }
 .timeline::before {
   content: ''; position: absolute; left: 9px; top: 0; bottom: 0;
-  width: 2px; background: linear-gradient(180deg, #409EFF, #8b5cf6);
+  width: 2px; background: #426fa6;
 }
 .tl-item { position: relative; margin-bottom: 24px; }
 .tl-dot {
   position: absolute; left: -24px; top: 8px;
   width: 12px; height: 12px; border-radius: 50%;
-  background: #409EFF; border: 2px solid #fff;
+  background: #426fa6; border: 2px solid #fff;
   box-shadow: 0 0 0 3px rgba(64,158,255,0.2);
 }
 .tl-card {
@@ -97,7 +97,7 @@ onMounted(async () => {
   border: 1px solid rgba(255,255,255,0.5);
   border-radius: 12px; padding: 16px 20px;
 }
-.tl-year { font-size: 12px; color: #409EFF; font-weight: 600; }
+.tl-year { font-size: 12px; color: #426fa6; font-weight: 600; }
 .tl-title { font-size: 15px; color: #303133; font-weight: 600; margin: 4px 0; }
 .tl-desc { font-size: 13px; color: #909399; margin: 0; line-height: 1.6; }
 </style>

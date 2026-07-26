@@ -185,7 +185,7 @@ async function fetchDashboard() {
 }
 
 .eyebrow {
-  color: #2563eb;
+  color: #426fa6;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -279,7 +279,7 @@ async function fetchDashboard() {
 }
 
 .panel-head a:hover {
-  color: #2563eb;
+  color: #426fa6;
 }
 
 .todo-list,
@@ -315,7 +315,7 @@ async function fetchDashboard() {
 }
 
 .todo-dot.warning { background: #f59e0b; }
-.todo-dot.primary { background: #2563eb; }
+.todo-dot.primary { background: #426fa6; }
 .todo-dot.success { background: #10b981; }
 
 .todo-item strong {
@@ -393,7 +393,7 @@ async function fetchDashboard() {
   height: 32px;
   border-radius: 8px;
   background: #eef2ff;
-  color: #2563eb;
+  color: #426fa6;
   display: flex;
   align-items: center;
   justify-content: center;

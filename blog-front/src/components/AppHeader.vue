@@ -2,7 +2,10 @@
   <header class="header" :class="{ scrolled }">
     <div class="header-inner">
       <router-link to="/" class="logo">
-        <span class="logo-icon">B</span>
+        <svg class="logo-mark" viewBox="0 0 28 28" aria-hidden="true">
+          <path d="M4 4h16v16H4z" />
+          <path d="M8 8h16v16H8z" />
+        </svg>
         <span class="logo-text">AtlasMind</span>
       </router-link>
       <nav class="nav">
@@ -85,13 +88,17 @@ function doSearch() {
   display: flex; align-items: center; gap: 8px;
   text-decoration: none;
 }
-.logo-icon {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: #111827;
-  color: #fff; font-size: 15px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
+.logo-mark {
+  width: 30px; height: 30px; flex: 0 0 auto;
+  fill: none; stroke: var(--blog-primary); stroke-width: 2;
+  stroke-linejoin: round;
 }
-.logo-text { font-size: 17px; font-weight: 700; color: var(--blog-text); }
+.logo-text {
+  color: var(--blog-text);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 19px;
+  font-weight: 700;
+}
 
 /* Nav */
 .nav { display: flex; gap: 2px; flex: 1; justify-content: center; }
@@ -103,21 +110,22 @@ function doSearch() {
   background: var(--blog-surface-soft); color: var(--blog-text);
 }
 .nav-link.router-link-active {
-  background: #111827; color: #ffffff; font-weight: 600;
+  color: var(--blog-primary);
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--blog-primary);
 }
 
 /* Search Box */
 .search-box {
   display: flex; align-items: center; gap: 6px;
-  height: 34px; padding: 0 10px; border-radius: 8px;
-  background: #ffffff;
+  height: 34px; padding: 0 10px; border-radius: 4px;
+  background: var(--blog-surface);
   border: 1px solid var(--blog-border);
-  transition: all 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .search-box:focus-within {
-  background: #fff;
   border-color: var(--blog-primary);
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  box-shadow: 0 0 0 3px rgba(66,111,166,0.12);
 }
 .search-icon {
   color: #c0c4cc; flex-shrink: 0;
@@ -161,11 +169,8 @@ function doSearch() {
 [data-theme="dark"] .header.scrolled {
   background: rgba(17,24,39,0.94);
 }
-[data-theme="dark"] .logo-icon,
-[data-theme="dark"] .nav-link.router-link-active {
-  background: #e5e7eb;
-  color: #0b1120;
-}
+[data-theme="dark"] .logo-mark { stroke: #8fb1d8; }
+[data-theme="dark"] .nav-link.router-link-active { color: #8fb1d8; }
 [data-theme="dark"] .search-box {
   background: var(--blog-surface);
   border-color: var(--blog-border);

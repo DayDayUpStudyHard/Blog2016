@@ -2,7 +2,10 @@
   <div class="chat-widget">
     <!-- 浮动触发按钮 — 位于 ToolsWidget 上方 -->
     <button class="chat-trigger" :class="{ active: panelOpen }" @click="togglePanel" title="AI智能问答">
-      <span class="trigger-icon">🤖</span>
+      <svg class="trigger-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <path d="M4 5h16v12H7l-3 3z" />
+        <path d="M8 9h8M8 13h5" />
+      </svg>
     </button>
 
     <!-- 侧边聊天面板 -->
@@ -12,7 +15,12 @@
           <!-- 头部 -->
           <div class="chat-header">
             <div class="header-left">
-              <span class="header-icon">🤖</span>
+              <span class="header-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M4 4h12v12H4z" />
+                  <path d="M8 8h12v12H8z" />
+                </svg>
+              </span>
               <span class="header-title">AI 智能问答</span>
               <span class="header-badge">RAG</span>
             </div>
@@ -212,7 +220,7 @@ async function send(msg) {
 }
 .chat-trigger:hover, .chat-trigger.active {
   transform: translateY(-2px);
-  border-color: #6366f1;
+  border-color: #426fa6;
   box-shadow: 0 4px 16px rgba(99,102,241,0.3);
 }
 .trigger-icon { font-size: 20px; line-height: 1; }
@@ -247,7 +255,7 @@ async function send(msg) {
 .header-icon { font-size: 20px; }
 .header-title { font-size: 15px; font-weight: 600; color: #1e293b; }
 .header-badge {
-  font-size: 10px; font-weight: 600; color: #6366f1;
+  font-size: 10px; font-weight: 600; color: #426fa6;
   background: rgba(99,102,241,0.1); padding: 2px 8px; border-radius: 8px;
 }
 .close-btn {
@@ -275,10 +283,10 @@ async function send(msg) {
 .suggestions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .sug-chip {
   padding: 6px 14px; border-radius: 16px; border: 1px solid rgba(99,102,241,0.25);
-  background: rgba(99,102,241,0.05); color: #6366f1;
+  background: rgba(99,102,241,0.05); color: #426fa6;
   font-size: 12px; cursor: pointer; transition: all 0.2s;
 }
-.sug-chip:hover { background: rgba(99,102,241,0.15); border-color: #6366f1; }
+.sug-chip:hover { background: rgba(99,102,241,0.15); border-color: #426fa6; }
 
 /* 消息气泡 */
 .msg-wrapper { margin-bottom: 16px; display: flex; }
@@ -294,7 +302,7 @@ async function send(msg) {
   word-break: break-word;
 }
 .msg-wrapper.user .msg-bubble {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: var(--blog-primary);
   color: #fff;
   border-bottom-right-radius: 4px;
 }
@@ -311,7 +319,7 @@ async function send(msg) {
 }
 .sources-label { font-size: 11px; color: #94a3b8; margin-bottom: 4px; }
 .source-item { margin-bottom: 3px; }
-.source-link { font-size: 12px; color: #6366f1; text-decoration: none; }
+.source-link { font-size: 12px; color: #426fa6; text-decoration: none; }
 .source-link:hover { text-decoration: underline; }
 .source-snippet { font-size: 11px; color: #94a3b8; margin-left: 6px; }
 
@@ -348,14 +356,14 @@ async function send(msg) {
   outline: none;
   transition: border-color 0.2s;
 }
-.chat-input-field:focus { border-color: #6366f1; }
+.chat-input-field:focus { border-color: #426fa6; }
 .chat-send-btn {
   width: 40px; height: 40px; border-radius: 12px; border: none;
-  background: #6366f1; color: #fff; cursor: pointer;
+  background: #426fa6; color: #fff; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
 }
-.chat-send-btn:hover:not(:disabled) { background: #4f46e5; transform: scale(1.05); }
+.chat-send-btn:hover:not(:disabled) { background: #315987; transform: scale(1.05); }
 .chat-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ====== 遮罩 ====== */
@@ -390,4 +398,88 @@ async function send(msg) {
 [data-theme="dark"] .sug-chip { background: rgba(99,102,241,0.1); }
 [data-theme="dark"] .msg-sources { border-color: rgba(255,255,255,0.06); }
 [data-theme="dark"] .chat-overlay { background: rgba(0,0,0,0.5); }
+
+/* Hallmark | Workbench surface: blue ink, paper surfaces, no decorative gradients */
+.chat-trigger {
+  border-color: var(--blog-border);
+  background: var(--blog-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 2px 8px rgba(31, 45, 61, 0.08);
+}
+
+.chat-trigger:hover,
+.chat-trigger.active {
+  color: var(--blog-primary);
+  border-color: var(--blog-primary);
+  box-shadow: 0 2px 8px rgba(31, 45, 61, 0.08);
+  transform: none;
+}
+
+.trigger-icon {
+  display: block;
+  font-size: 0;
+}
+
+.chat-panel {
+  background: var(--blog-surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-left-color: var(--blog-border);
+  box-shadow: -8px 0 28px rgba(31, 45, 61, 0.08);
+}
+
+.header-icon {
+  color: var(--blog-primary);
+}
+
+.header-badge {
+  color: var(--blog-primary);
+  background: var(--blog-surface-soft);
+  border-radius: 3px;
+}
+
+.sug-chip {
+  border-color: var(--blog-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--blog-primary);
+}
+
+.sug-chip:hover {
+  background: var(--blog-surface-soft);
+  border-color: var(--blog-primary);
+}
+
+.msg-wrapper.user .msg-bubble {
+  background: var(--blog-primary);
+}
+
+.msg-wrapper.assistant .msg-bubble {
+  background: var(--blog-surface-soft);
+}
+
+.chat-input {
+  background: var(--blog-surface);
+}
+
+.chat-input-field {
+  border-radius: 3px;
+  border-color: var(--blog-border);
+  background: var(--blog-bg);
+}
+
+.chat-input-field:focus {
+  border-color: var(--blog-primary);
+}
+
+.chat-send-btn {
+  border-radius: 3px;
+  background: var(--blog-primary);
+}
+
+.chat-send-btn:hover:not(:disabled) {
+  background: var(--blog-primary-dark);
+  transform: none;
+}
 </style>

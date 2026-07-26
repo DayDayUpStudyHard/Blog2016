@@ -51,12 +51,23 @@ class KbStore:
                 cur.execute(f"UPDATE kb_document SET {', '.join(fields)} WHERE id=%s", params)
             conn.commit()
 
-    def replace_chunks(self, document_id: int, space_id: int, chunks: list[Chunk]) -> list[int]:
+    def reset_chunks(self, document_id: int) -> None:
         with self._conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("UPDATE kb_document_chunk SET deleted=1 WHERE document_id=%s", (document_id,))
+            conn.commit()
+
+    def replace_chunks(self, document_id: int, space_id: int, chunks: list[Chunk]) -> list[int]:
+        self.reset_chunks(document_id)
+        return self.insert_chunks_batch(document_id, space_id, chunks, 0)
+
+    def insert_chunks_batch(self, document_id: int, space_id: int, chunks: list[Chunk], start_index: int) -> list[int]:
+        if not chunks:
+            return []
+        with self._conn() as conn:
+            with conn.cursor() as cur:
                 ids: list[int] = []
-                for index, chunk in enumerate(chunks):
+                for offset, chunk in enumerate(chunks):
                     cur.execute(
                         """
                         INSERT INTO kb_document_chunk
@@ -67,7 +78,7 @@ class KbStore:
                         (
                             document_id,
                             space_id,
-                            index,
+                            start_index + offset,
                             chunk.section_title,
                             chunk.source_page,
                             chunk.text,
@@ -78,6 +89,16 @@ class KbStore:
                     ids.append(cur.lastrowid)
             conn.commit()
             return ids
+
+    def count_chunks(self, document_id: int) -> int:
+        with self._conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT COUNT(*) AS count FROM kb_document_chunk WHERE document_id=%s AND deleted=0",
+                    (document_id,),
+                )
+                row = cur.fetchone() or {}
+                return int(row.get("count") or 0)
 
     def get_chunks(self, document_id: int) -> list[dict]:
         with self._conn() as conn:
@@ -93,6 +114,28 @@ class KbStore:
                     (document_id,),
                 )
                 return list(cur.fetchall())
+
+    def iter_chunks(self, document_id: int, batch_size: int):
+        last_id = 0
+        while True:
+            with self._conn() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        SELECT c.*, d.title
+                        FROM kb_document_chunk c
+                        JOIN kb_document d ON d.id = c.document_id
+                        WHERE c.document_id=%s AND c.deleted=0 AND c.id>%s
+                        ORDER BY c.id ASC
+                        LIMIT %s
+                        """,
+                        (document_id, last_id, batch_size),
+                    )
+                    rows = list(cur.fetchall())
+            if not rows:
+                break
+            last_id = rows[-1]["id"]
+            yield rows
 
     def mark_chunk(self, chunk_id: int, embedding_status: str, index_status: str) -> None:
         with self._conn() as conn:

@@ -6,6 +6,8 @@ const api = axios.create({
   timeout: 10000
 })
 
+const KB_UPLOAD_TIMEOUT = 10 * 60 * 1000
+
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('blog-token')
   if (token) config.headers['blog-token'] = token
@@ -76,12 +78,43 @@ export function deleteKbSpace(id) { return api.delete(`/api/admin/kb/spaces/${id
 export function getKbDocuments(params) { return api.get('/api/admin/kb/documents', { params }) }
 export function getKbDocument(id) { return api.get(`/api/admin/kb/documents/${id}`) }
 export function getKbDocumentChunks(id) { return api.get(`/api/admin/kb/documents/${id}/chunks`) }
-export function uploadKbDocument(spaceId, file, title = '') {
+export function uploadKbDocument(spaceId, file, title = '', parseMode = 'OCR') {
   const formData = new FormData()
   formData.append('spaceId', spaceId)
   formData.append('file', file)
   if (title) formData.append('title', title)
-  return api.post('/api/admin/kb/documents/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+  if (parseMode) formData.append('parseMode', parseMode)
+  return api.post('/api/admin/kb/documents/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: KB_UPLOAD_TIMEOUT
+  })
+}
+export function uploadKbDocumentChunk({ uploadId, fileName, fileSize, chunkIndex, totalChunks, chunk }) {
+  const formData = new FormData()
+  formData.append('uploadId', uploadId)
+  formData.append('fileName', fileName)
+  formData.append('fileSize', fileSize)
+  formData.append('chunkIndex', chunkIndex)
+  formData.append('totalChunks', totalChunks)
+  formData.append('chunk', chunk)
+  return api.post('/api/admin/kb/documents/upload/chunk', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: KB_UPLOAD_TIMEOUT
+  })
+}
+export function completeKbDocumentUpload({ spaceId, uploadId, fileName, fileSize, totalChunks, title = '', parseMode = 'OCR' }) {
+  const formData = new FormData()
+  formData.append('spaceId', spaceId)
+  formData.append('uploadId', uploadId)
+  formData.append('fileName', fileName)
+  formData.append('fileSize', fileSize)
+  formData.append('totalChunks', totalChunks)
+  if (title) formData.append('title', title)
+  if (parseMode) formData.append('parseMode', parseMode)
+  return api.post('/api/admin/kb/documents/upload/complete', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: KB_UPLOAD_TIMEOUT
+  })
 }
 export function importDebugRecord() { return api.post('/api/admin/kb/documents/import-debug-record') }
 export function deleteKbDocument(id) { return api.delete(`/api/admin/kb/documents/${id}`) }
